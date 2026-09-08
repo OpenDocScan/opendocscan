@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'capture/capture_controller.dart';
 import 'capture/capture_screen.dart';
 import 'import/file_picker_platform.dart';
+import 'layout.dart';
 import 'permissions/permission_gate.dart';
 import 'scan_result.dart';
 import 'theme.dart';
@@ -90,35 +91,55 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: _results.isEmpty
                 ? _Empty(theme: theme)
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _results.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) => _ResultCard(result: _results[i]),
+                : Constrained(
+                    // A grid whose column count follows the window: one card on
+                    // a phone, two in Split View, three or four on a
+                    // full-screen iPad. Expressed as a card width rather than a
+                    // column count, so no breakpoint has to be kept in step
+                    // with a device list.
+                    child: GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: kCardWidth,
+                            mainAxisSpacing: 12,
+                            crossAxisSpacing: 12,
+                            // Tall enough for a 220px preview plus its caption.
+                            mainAxisExtent: 274,
+                          ),
+                      itemCount: _results.length,
+                      itemBuilder: (_, i) => _ResultCard(result: _results[i]),
+                    ),
                   ),
           ),
           SafeArea(
             top: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      key: const Key('import'),
-                      onPressed: _busy ? null : _import,
-                      child: const Text('Import images'),
+              child: Constrained(
+                // Stretched across an iPad these two read as a toolbar rather
+                // than a choice, so past a readable width they stop growing
+                // and sit centred.
+                max: kReadableWidth,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        key: const Key('import'),
+                        onPressed: _busy ? null : _import,
+                        child: const Text('Import images'),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      key: const Key('scan'),
-                      onPressed: _busy ? null : _scan,
-                      child: const Text('Scan'),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        key: const Key('scan'),
+                        onPressed: _busy ? null : _scan,
+                        child: const Text('Scan'),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -138,25 +159,28 @@ class _Empty extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Nothing scanned yet',
-              style: TextStyle(
-                color: theme.textStrong,
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: kReadableWidth),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Nothing scanned yet',
+                style: TextStyle(
+                  color: theme.textStrong,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Photograph a page or import one you already have. Everything '
-              'happens on this device — nothing is uploaded.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: theme.textMuted, fontSize: 15),
-            ),
-          ],
+              const SizedBox(height: 10),
+              Text(
+                'Photograph a page or import one you already have. Everything '
+                'happens on this device — nothing is uploaded.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: theme.textMuted, fontSize: 15),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -181,39 +205,39 @@ class _ResultCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: switch (result) {
         ScanPending() => const Padding(
-            padding: EdgeInsets.all(20),
-            child: Center(child: CircularProgressIndicator()),
-          ),
+          padding: EdgeInsets.all(20),
+          child: Center(child: CircularProgressIndicator()),
+        ),
         ScanFailed(message: final message) => Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.error_outline, color: theme.danger),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Could not read this image',
-                        style: TextStyle(
-                          color: theme.textStrong,
-                          fontWeight: FontWeight.w600,
-                        ),
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.error_outline, color: theme.danger),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Could not read this image',
+                      style: TextStyle(
+                        color: theme.textStrong,
+                        fontWeight: FontWeight.w600,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        message,
-                        key: const Key('failure-message'),
-                        style: TextStyle(color: theme.textMuted, fontSize: 13),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message,
+                      key: const Key('failure-message'),
+                      style: TextStyle(color: theme.textMuted, fontSize: 13),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
         ScanDecoded(
           bytes: final bytes,
           width: final width,

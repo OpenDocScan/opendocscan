@@ -49,8 +49,9 @@ class _CaptureScreenState extends State<CaptureScreen> {
     if (!granted) {
       // "Denied" and "denied permanently" need different words and different
       // buttons: only one of them can be undone by asking again.
-      final forever =
-          await widget.permissions.isPermanentlyDenied(Permission.camera);
+      final forever = await widget.permissions.isPermanentlyDenied(
+        Permission.camera,
+      );
       if (!mounted) return;
       setState(() => _stage = forever ? _Stage.deniedForever : _Stage.denied);
       return;
@@ -106,66 +107,38 @@ class _CaptureScreenState extends State<CaptureScreen> {
       body: switch (_stage) {
         _Stage.asking => const Center(child: CircularProgressIndicator()),
         _Stage.denied => _Message(
-            key: const Key('capture-denied'),
-            title: 'The camera is off for OpenDocScan',
-            body: 'Scanning needs the camera. Nothing it sees leaves your '
-                'device — the photograph is processed here and never uploaded.',
-            actionLabel: 'Ask again',
-            onAction: _start,
-          ),
+          key: const Key('capture-denied'),
+          title: 'The camera is off for OpenDocScan',
+          body:
+              'Scanning needs the camera. Nothing it sees leaves your '
+              'device — the photograph is processed here and never uploaded.',
+          actionLabel: 'Ask again',
+          onAction: _start,
+        ),
         _Stage.deniedForever => _Message(
-            key: const Key('capture-denied-forever'),
-            title: 'The camera is blocked in Settings',
-            body: 'Asking again will not do anything from here — the permission '
-                'has to be turned back on in the system settings.',
-            actionLabel: 'Open settings',
-            onAction: openAppSettings,
-          ),
+          key: const Key('capture-denied-forever'),
+          title: 'The camera is blocked in Settings',
+          body:
+              'Asking again will not do anything from here — the permission '
+              'has to be turned back on in the system settings.',
+          actionLabel: 'Open settings',
+          onAction: openAppSettings,
+        ),
         _Stage.failed => _Message(
-            key: const Key('capture-failed'),
-            title: 'The camera would not start',
-            body: _error,
-            actionLabel: 'Try again',
-            onAction: _start,
+          key: const Key('capture-failed'),
+          title: 'The camera would not start',
+          body: _error,
+          actionLabel: 'Try again',
+          onAction: _start,
+        ),
+        _Stage.ready => _Viewfinder(
+          preview: widget.controller.preview(),
+          shutter: _Shutter(
+            onTap: _shutter,
+            busy: _capturing,
+            colour: theme.brand,
           ),
-        _Stage.ready => Column(
-            children: [
-              Expanded(
-                child: Container(
-                  color: DocScanTokens.black,
-                  width: double.infinity,
-                  child: widget.controller.preview() ??
-                      const Center(child: CircularProgressIndicator()),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 28),
-                child: Semantics(
-                  button: true,
-                  label: 'Take the photograph',
-                  child: GestureDetector(
-                    key: const Key('shutter'),
-                    onTap: _shutter,
-                    child: Container(
-                      width: 74,
-                      height: 74,
-                      decoration: BoxDecoration(
-                        // Green means action, and this is the action.
-                        color: _capturing
-                            ? theme.brand.withValues(alpha: 0.5)
-                            : theme.brand,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: DocScanTokens.white,
-                          width: 4,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        ),
       },
     );
   }
@@ -211,6 +184,88 @@ class _Message extends StatelessWidget {
             const SizedBox(height: 24),
             FilledButton(onPressed: onAction, child: Text(actionLabel)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The preview and the shutter, arranged for the window's shape.
+///
+/// Held in landscape — which is most of an iPad's life, and where a page is
+/// easiest to frame — a shutter pinned below the preview sits at the far edge
+/// of the screen, away from either hand, and steals height from the one
+/// dimension the preview needs. Beside the preview it stays under a thumb.
+class _Viewfinder extends StatelessWidget {
+  const _Viewfinder({required this.preview, required this.shutter});
+
+  final Widget? preview;
+  final Widget shutter;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final landscape = size.width > size.height;
+
+    final stage = Container(
+      color: DocScanTokens.black,
+      width: double.infinity,
+      height: double.infinity,
+      child: preview ?? const Center(child: CircularProgressIndicator()),
+    );
+
+    if (landscape) {
+      return Row(
+        children: [
+          Expanded(child: stage),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: shutter,
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      children: [
+        Expanded(child: stage),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 28),
+          child: shutter,
+        ),
+      ],
+    );
+  }
+}
+
+class _Shutter extends StatelessWidget {
+  const _Shutter({
+    required this.onTap,
+    required this.busy,
+    required this.colour,
+  });
+
+  final VoidCallback onTap;
+  final bool busy;
+  final Color colour;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Take the photograph',
+      child: GestureDetector(
+        key: const Key('shutter'),
+        onTap: onTap,
+        child: Container(
+          width: 74,
+          height: 74,
+          decoration: BoxDecoration(
+            // Green means action, and this is the action.
+            color: busy ? colour.withValues(alpha: 0.5) : colour,
+            shape: BoxShape.circle,
+            border: Border.all(color: DocScanTokens.white, width: 4),
+          ),
         ),
       ),
     );
