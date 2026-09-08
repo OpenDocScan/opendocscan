@@ -1,0 +1,771 @@
+/* Mobile-first, because the camera is. Every layout here assumes a phone
+   held in one hand and widens from there rather than the other way up.
+
+   Colour, type, spacing, radius and motion all come from the vendored design
+   tokens in ../tokens/. This file names no hex value, no font stack and no
+   duration of its own — the block below is an alias layer and nothing more.
+   The names on the left are this app's; the values on the right are the
+   system's *semantic* aliases, which is what makes <html class="oa-auto">
+   work: the token stylesheet re-points those aliases for dark mode, so every
+   rule further down this file follows the OS for free.
+
+   Two decisions worth stating, because they are the ones a reader will check:
+
+   --accent is the suite's brand green, not this product's own accent. Green
+   means "action" in this system, and every --accent in this file is on an
+   action: the shutter, the primary button, the selected filter chip, the
+   slider thumb, a text button. The product's own accent — slot 20, brass —
+   identifies the product rather than driving it, so it appears on the mark and
+   on nothing that can be pressed.
+
+   --good is the system's success colour, which is also green. That is fine
+   here and would not be everywhere: the only thing wearing it is the "text
+   read" badge on a page thumbnail, which is never adjacent to a control. */
+
+:root {
+  --bg: var(--bg-page);
+  --surface: var(--surface-card);
+  --surface-2: var(--surface-raised);
+  --line: var(--border-hairline);
+  --ink: var(--text-strong);
+  --ink-dim: var(--text-muted);
+
+  --accent: var(--brand);
+  --accent-ink: var(--brand-contrast);
+  --tint: var(--app-docscan);
+
+  --danger: var(--danger-fg);
+  --good: var(--success-fg);
+
+  --radius: var(--radius-lg);
+  --dock-h: 88px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+
+  --clear-glyph: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' stroke='%23000' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* `hidden` is only a `display: none` in the UA stylesheet, so any rule
+   here that sets a display — and several must — silently outranks it. A
+   hidden full-screen overlay then keeps its layer and eats every tap
+   underneath it, which looks exactly like the app having frozen. */
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: var(--text-base) / var(--leading-normal) var(--font-sans);
+}
+
+#app {
+  height: 100dvh;
+  position: relative;
+}
+
+.view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* --- chrome ------------------------------------------------------------ */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(10px + var(--safe-t)) 12px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  flex: 0 0 auto;
+}
+
+.bar h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The family wordmark: "Open" muted, the product word at full strength, then a
+   full stop in the product's own accent. This is the one place brass appears
+   in the app — it identifies the product, it is not an affordance. Brass is
+   3.4:1 as text on the dark ground, so the dot is the slot lifted toward white,
+   which is the same value the website's wordmark uses. */
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--logo-tracking);
+}
+.wordmark .prefix {
+  color: var(--text-muted);
+}
+/* Brass is 5.0:1 on the light ground and only 3.4:1 on the dark one, so the
+   dot is lifted toward white in dark mode and left alone in light. Lifting it
+   in both — which is what one flat value does — is what made it disappear on
+   white. Mirrors how colors.css itself declares its dark overrides. */
+.wordmark .dot {
+  color: var(--tint);
+}
+@media (prefers-color-scheme: dark) {
+  .oa-auto .wordmark .dot {
+    color: color-mix(in oklab, var(--tint) 68%, var(--white));
+  }
+}
+.oa-dark .wordmark .dot {
+  color: color-mix(in oklab, var(--tint) 68%, var(--white));
+}
+
+.icon-btn,
+.text-btn {
+  background: none;
+  border: 0;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  border-radius: 10px;
+  padding: 8px;
+  min-width: 40px;
+}
+
+.icon-btn {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.text-btn {
+  color: var(--accent);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.icon-btn:active,
+.text-btn:active {
+  background: var(--surface-2);
+}
+
+.pad {
+  padding: 12px 16px 0;
+  flex: 0 0 auto;
+}
+
+/* --- dock -------------------------------------------------------------- */
+
+.dock {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 16px calc(12px + var(--safe-b));
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+
+.dock-note {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+.btn {
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 46px;
+  flex: 1 1 0;
+  max-width: 260px;
+}
+
+.btn.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn.ghost {
+  background: var(--surface-2);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.shutter {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 4px solid var(--ink);
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.shutter:active {
+  transform: scale(0.94);
+}
+
+/* --- camera / crop stage ----------------------------------------------- */
+
+.stage {
+  flex: 1 1 auto;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: #000;
+  overflow: hidden;
+  min-height: 0;
+  touch-action: none;
+}
+
+#video,
+.stage canvas {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+}
+
+#video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.stage-note {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 13px;
+  backdrop-filter: blur(6px);
+  transition: opacity 0.2s;
+}
+
+.stage-note.is-locked {
+  background: rgba(76, 141, 255, 0.9);
+}
+
+/* --- filter controls ---------------------------------------------------- */
+
+.controls {
+  flex: 0 0 auto;
+  padding: 12px 16px 0;
+  display: grid;
+  gap: 12px;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.chip {
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  flex: 1 1 0;
+}
+
+.chip.is-on {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+}
+
+.slider {
+  display: grid;
+  grid-template-columns: auto 1fr 3ch;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: var(--ink-dim);
+}
+
+.slider input {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.slider output {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- library ------------------------------------------------------------ */
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0 12px;
+}
+
+.search-icon {
+  color: var(--ink-dim);
+  font-size: 17px;
+}
+
+.search input {
+  flex: 1;
+  background: none;
+  border: 0;
+  outline: none;
+  color: var(--ink);
+  font: inherit;
+  padding: 12px 0;
+  min-width: 0;
+}
+
+/* Chromium draws the clear affordance of a type=search field in its own blue,
+   which is the last colour in this app that belongs to no palette. Masking a
+   glyph rather than hiding the button keeps the affordance and puts it on the
+   token layer, where it follows the theme like everything else. */
+.search input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  background: var(--ink-dim);
+  -webkit-mask: var(--clear-glyph) center / contain no-repeat;
+  mask: var(--clear-glyph) center / contain no-repeat;
+}
+
+.hint {
+  margin: 6px 2px 0;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+.grid {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 12px 16px;
+  align-content: start;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+}
+
+.card img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: var(--surface-2);
+  display: block;
+}
+
+.card-meta {
+  padding: 9px 11px 11px;
+}
+
+.card-meta strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-meta span {
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+.empty {
+  flex: 1 1 auto;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  padding: 24px 32px;
+  gap: 6px;
+}
+
+.empty-mark {
+  font-size: 40px;
+  color: var(--ink-dim);
+}
+
+.empty h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.empty p {
+  margin: 0;
+  color: var(--ink-dim);
+  max-width: 34ch;
+}
+
+.notice {
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-bottom: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.notice.warn {
+  border-color: color-mix(in srgb, var(--danger) 50%, var(--line));
+}
+
+.notice button {
+  background: none;
+  border: 0;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+}
+
+/* --- page tray ----------------------------------------------------------- */
+
+.tray {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  padding: 12px 16px;
+  align-content: start;
+}
+
+.tray-item {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.tray-item img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  display: block;
+}
+
+.tray-item .n {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  border-radius: 999px;
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  padding: 0 6px;
+}
+
+.tray-item .ocr-flag {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.65);
+  color: var(--good);
+  border-radius: 999px;
+  font-size: 11px;
+  padding: 3px 7px;
+}
+
+.tray-tools {
+  display: flex;
+  border-top: 1px solid var(--line);
+}
+
+.tray-tools button {
+  flex: 1;
+  background: none;
+  border: 0;
+  border-right: 1px solid var(--line);
+  color: var(--ink-dim);
+  font: inherit;
+  font-size: 16px;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.tray-tools button:last-child {
+  border-right: 0;
+  color: var(--danger);
+}
+
+.tray-tools button:disabled {
+  opacity: 0.3;
+}
+
+.doc-pages {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 12px 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.doc-pages img {
+  width: 100%;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  display: block;
+}
+
+/* --- forms --------------------------------------------------------------- */
+
+.field {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--ink-dim);
+}
+
+.field input,
+.field select {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--ink);
+  font: inherit;
+  padding: 11px 12px;
+  width: 100%;
+}
+
+.check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 14px;
+}
+
+.check input {
+  margin-top: 3px;
+  accent-color: var(--accent);
+  width: 18px;
+  height: 18px;
+}
+
+.check small {
+  display: block;
+  color: var(--ink-dim);
+  font-size: 12px;
+}
+
+.settings {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  background: var(--surface);
+}
+
+.settings summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.settings[open] summary {
+  margin-bottom: 10px;
+}
+
+/* --- overlays ------------------------------------------------------------ */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--dock-h) + var(--safe-b) + 12px);
+  transform: translateX(-50%);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  z-index: 40;
+  max-width: min(90vw, 420px);
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  backdrop-filter: blur(3px);
+}
+
+.busy-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px 28px;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  min-width: 200px;
+}
+
+.busy-card p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.4s;
+  }
+  .btn:active:not(:disabled),
+  .shutter:active {
+    transform: none;
+  }
+}
+
+dialog {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  max-width: min(92vw, 460px);
+  padding: 22px;
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+dialog h2 {
+  margin: 0 0 10px;
+  font-size: 17px;
+}
+
+dialog p {
+  margin: 0 0 10px;
+  color: var(--ink-dim);
+  font-size: 14px;
+}
+
+dialog .verify {
+  border-left: 2px solid var(--accent);
+  padding-left: 12px;
+  color: var(--ink);
+}
+
+dialog dl {
+  margin: 14px 0;
+  font-size: 13px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 14px;
+}
+
+dialog dt {
+  color: var(--ink-dim);
+}
+
+dialog dd {
+  margin: 0;
+}
+
+/* Wider screens: the app is a phone-shaped column, centred. A scanner has
+   no use for a 27-inch-wide page tray. */
+@media (min-width: 700px) {
+  #app {
+    max-width: 520px;
+    margin: 0 auto;
+    border-left: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+  }
+}

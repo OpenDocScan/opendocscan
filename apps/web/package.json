@@ -1,0 +1,17 @@
+{
+  "name": "opendocscan-web",
+  "private": true,
+  "type": "module",
+  "description": "OpenDocScan as a local-only web app. Ships no runtime dependencies — everything below is for building and testing only.",
+  "scripts": {
+    "build": "./scripts/build-wasm.sh",
+    "serve": "python3 scripts/serve-lan.py --plain",
+    "serve:lan": "python3 scripts/serve-lan.py",
+    "test": "node e2e/scan.spec.mjs",
+    "bench": "node bench/wasm-bench.mjs"
+  },
+  "devDependencies": {
+    "binaryen": "^123.0.0",
+    "playwright": "^1.62.1"
+  }
+}

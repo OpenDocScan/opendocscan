@@ -1,0 +1,15 @@
+[package]
+name = "docscan-pdf"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+docscan-ocr = { path = "../docscan-ocr" }
+image.workspace = true
+pdf-writer = "0.12"
+flate2 = "1"
+thiserror.workspace = true
+
+[dev-dependencies]
+lopdf = "0.36"

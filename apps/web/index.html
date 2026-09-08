@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en" class="oa-auto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>OpenDocScan</title>
+    <meta name="description" content="Scan documents to PDF entirely on your device. No account, no watermark, no upload." />
+    <meta name="theme-color" content="#111111" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/icon-180.png" />
+    <!-- The design tokens, vendored. The same set the marketing site is built
+         from, so the product and its own website cannot drift into two
+         palettes. `oa-auto` on <html> is the token layer's own "follow the OS"
+         class: it re-points the semantic aliases for dark mode, which is what
+         lets styles.css carry one set of rules for both themes. -->
+    <link rel="stylesheet" href="tokens/css/colors.css" />
+    <link rel="stylesheet" href="tokens/css/typography.css" />
+    <link rel="stylesheet" href="tokens/css/spacing.css" />
+    <link rel="stylesheet" href="tokens/css/radius.css" />
+    <link rel="stylesheet" href="tokens/css/motion.css" />
+    <link rel="stylesheet" href="tokens/css/fonts.css" />
+    <link rel="stylesheet" href="src/styles.css" />
+
+    <!--
+      Told about, rather than discovered.
+
+      Left alone the browser finds these one layer at a time: parse the
+      HTML, fetch app.js, parse it to learn what app.js imports, fetch
+      that. Naming them here starts all four at once, and the sooner
+      scanner.js is running the sooner it has started the worker that
+      fetches the wasm.
+
+      Only the document's own modules. The worker's dependencies — the
+      wasm glue and the module itself — are deliberately *not* listed:
+      a worker fetches in its own fetch group, so a preload here does not
+      satisfy its request. Measured, rather than assumed: adding those two
+      hints made the browser download each of them twice.
+    -->
+    <link rel="modulepreload" href="src/store.js" />
+    <link rel="modulepreload" href="src/scanner.js" />
+    <link rel="modulepreload" href="src/ocr.js" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Library ------------------------------------------------------ -->
+      <section class="view" id="view-library" data-view="library">
+        <header class="bar">
+          <h1 class="wordmark"><span class="prefix">Open</span>DocScan<span class="dot">.</span></h1>
+          <button class="icon-btn" id="btn-about" aria-label="About this app">?</button>
+        </header>
+
+        <div class="pad">
+          <label class="search">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              id="search"
+              placeholder="Search inside your scans"
+              autocomplete="off"
+              aria-label="Search inside your scans"
+            />
+          </label>
+          <p class="hint" id="search-hint">Searches the text OCR read on every page.</p>
+        </div>
+
+        <div class="pad" id="library-notices"></div>
+
+        <div id="library-grid" class="grid"></div>
+
+        <div class="empty" id="library-empty" hidden>
+          <div class="empty-mark" aria-hidden="true">▤</div>
+          <h2>Nothing scanned yet</h2>
+          <p>
+            Everything you scan stays in this browser on this device. No account, no upload, no
+            watermark, no page limit.
+          </p>
+        </div>
+
+        <div class="dock">
+          <button class="btn ghost" id="btn-import-library">Import images</button>
+          <button class="btn primary" id="btn-new-scan">Scan</button>
+        </div>
+      </section>
+
+      <!-- Capture ------------------------------------------------------ -->
+      <section class="view" id="view-capture" data-view="capture" hidden>
+        <header class="bar">
+          <button class="icon-btn" data-back="library" aria-label="Back">←</button>
+          <h1 id="capture-count">New document</h1>
+          <button class="icon-btn" id="btn-flip" aria-label="Switch camera">⟳</button>
+        </header>
+
+        <div class="stage" id="capture-stage">
+          <video id="video" playsinline muted autoplay></video>
+          <canvas id="overlay" class="overlay"></canvas>
+          <p class="stage-note" id="capture-note">Point at a document</p>
+        </div>
+
+        <div class="dock">
+          <button class="btn ghost" id="btn-import-capture">Import</button>
+          <button class="shutter" id="btn-shutter" aria-label="Capture page"></button>
+          <button class="btn ghost" id="btn-to-tray" disabled>Pages <span id="tray-badge">0</span></button>
+        </div>
+      </section>
+
+      <!-- Crop --------------------------------------------------------- -->
+      <section class="view" id="view-crop" data-view="crop" hidden>
+        <header class="bar">
+          <button class="icon-btn" id="btn-crop-cancel" aria-label="Discard this page">←</button>
+          <h1>Adjust corners</h1>
+          <button class="text-btn" id="btn-crop-reset">Whole image</button>
+        </header>
+
+        <div class="stage" id="crop-stage">
+          <canvas id="crop-canvas"></canvas>
+        </div>
+
+        <div class="dock">
+          <p class="dock-note">Drag any corner to fit the page.</p>
+          <button class="btn primary" id="btn-crop-confirm">Continue</button>
+        </div>
+      </section>
+
+      <!-- Filter ------------------------------------------------------- -->
+      <section class="view" id="view-filter" data-view="filter" hidden>
+        <header class="bar">
+          <button class="icon-btn" id="btn-filter-back" aria-label="Back to corners">←</button>
+          <h1>Clean up</h1>
+          <button class="text-btn" id="btn-filter-rotate">Rotate</button>
+        </header>
+
+        <div class="stage" id="filter-stage">
+          <canvas id="filter-canvas"></canvas>
+        </div>
+
+        <div class="controls">
+          <div class="chips" role="group" aria-label="Filter">
+            <button class="chip" data-filter="original">Photo</button>
+            <button class="chip is-on" data-filter="enhance">Enhance</button>
+            <button class="chip" data-filter="bw">B &amp; W</button>
+          </div>
+          <label class="slider">
+            <span>Brightness</span>
+            <input type="range" id="brightness" min="-60" max="60" step="5" value="0" />
+            <output id="brightness-out">0</output>
+          </label>
+        </div>
+
+        <div class="dock">
+          <button class="btn primary" id="btn-filter-confirm">Add page</button>
+        </div>
+      </section>
+
+      <!-- Page tray ---------------------------------------------------- -->
+      <section class="view" id="view-tray" data-view="tray" hidden>
+        <header class="bar">
+          <button class="icon-btn" id="btn-tray-back" aria-label="Back to camera">←</button>
+          <h1 id="tray-title">Pages</h1>
+          <button class="text-btn" id="btn-tray-discard">Discard</button>
+        </header>
+
+        <div class="pad">
+          <label class="field">
+            <span>Document name</span>
+            <input type="text" id="doc-title" placeholder="Untitled scan" autocomplete="off" />
+          </label>
+        </div>
+
+        <div id="tray-list" class="tray"></div>
+
+        <div class="pad">
+          <details class="settings">
+            <summary>Export settings</summary>
+            <label class="field">
+              <span>Page size</span>
+              <select id="opt-paper">
+                <option value="a4">A4</option>
+                <option value="letter">US Letter</option>
+                <option value="legal">US Legal</option>
+                <option value="original">Match the scan</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Image quality</span>
+              <select id="opt-quality">
+                <option value="70">Smaller file</option>
+                <option value="82" selected>Balanced</option>
+                <option value="95">Best quality</option>
+              </select>
+            </label>
+            <label class="check">
+              <input type="checkbox" id="opt-ocr" checked />
+              <span>
+                Recognise text (OCR)
+                <small id="ocr-state">Makes scans searchable and text selectable in the PDF.</small>
+              </span>
+            </label>
+          </details>
+        </div>
+
+        <div class="dock">
+          <button class="btn ghost" id="btn-add-page">Add page</button>
+          <button class="btn primary" id="btn-save">Save &amp; export</button>
+        </div>
+      </section>
+
+      <!-- Saved document ----------------------------------------------- -->
+      <section class="view" id="view-doc" data-view="doc" hidden>
+        <header class="bar">
+          <button class="icon-btn" data-back="library" aria-label="Back to library">←</button>
+          <h1 id="doc-name">Document</h1>
+          <button class="icon-btn" id="btn-doc-delete" aria-label="Delete this document">🗑</button>
+        </header>
+
+        <div id="doc-pages" class="doc-pages"></div>
+
+        <div class="dock">
+          <button class="btn ghost" id="btn-doc-share">Share</button>
+          <button class="btn primary" id="btn-doc-pdf">Save PDF</button>
+        </div>
+      </section>
+    </div>
+
+    <input type="file" id="file-input" accept="image/*" multiple hidden />
+
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+    <div class="scrim" id="busy" hidden>
+      <div class="busy-card">
+        <div class="spinner" aria-hidden="true"></div>
+        <p id="busy-label">Working…</p>
+      </div>
+    </div>
+
+    <dialog id="about">
+      <h2>Everything happens on this device</h2>
+      <p>
+        OpenDocScan finds the page, straightens it, cleans it up, reads its text, and writes the
+        PDF using code running inside this tab. Your scans are stored in this browser and are
+        never uploaded.
+      </p>
+      <p class="verify">
+        You do not have to take that on trust. Open your browser's developer tools, switch to the
+        Network tab, and scan a document: after the app itself has loaded, there are no requests.
+      </p>
+      <dl id="about-facts"></dl>
+      <form method="dialog"><button class="btn primary">Close</button></form>
+    </dialog>
+
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>

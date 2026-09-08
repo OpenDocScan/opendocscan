@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="OpenDocScan">
+  <rect width="512" height="512" fill="#111111"/>
+  <g transform="translate(256 256) scale(0.68) translate(-256 -256)">
+
+  <path d="M150 128 L360 158 L340 386 L138 356 Z" fill="#f8f8f7"/>
+  <g stroke="#989898" stroke-width="14" stroke-linecap="round">
+    <path d="M180 196 L322 216"/>
+    <path d="M176 244 L318 264"/>
+    <path d="M172 292 L268 306"/>
+  </g>
+  <g stroke="#9a976d" stroke-width="18" stroke-linecap="round" fill="none">
+    <path d="M104 156 L104 108 L152 108"/>
+    <path d="M360 108 L408 108 L408 156"/>
+    <path d="M408 356 L408 404 L360 404"/>
+    <path d="M152 404 L104 404 L104 356"/>
+  </g>
+  </g>
+</svg>

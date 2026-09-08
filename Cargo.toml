@@ -1,0 +1,54 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/docscan-core",
+    "crates/docscan-detect",
+    "crates/docscan-transform",
+    "crates/docscan-filters",
+    "crates/docscan-ocr",
+    "crates/docscan-pdf",
+    "crates/docscan-wasm",
+]
+
+[workspace.package]
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+# Pinned centrally so every crate — including the wasm32 build, where each
+# unused codec is dead weight shipped over the wire — agrees on one lean
+# feature set. The browser decodes camera and imported files itself and
+# hands the core raw RGBA, so the only decoder the core needs is PNG (for
+# desktop tests and fixtures) and the only encoder is JPEG (for PDF
+# export). Turning the default set back on pulls in AVIF, EXR, and TIFF
+# support that nothing here calls.
+[workspace.dependencies]
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+imageproc = { version = "0.25", default-features = false }
+thiserror = "2"
+
+# The shipped browser build. `apps/web/scripts/build-wasm.sh` runs
+# `wasm-opt` over the result separately, so plain `cargo build --target
+# wasm32-unknown-unknown` stays fast for iteration.
+#
+# `opt-level = 3`, not `"z"`. Size is the obvious thing to optimise for a
+# module that has to travel down a phone connection, and it was what this
+# profile asked for originally — but it is the wrong trade here, because
+# the module travels once and then runs forever. The service worker
+# caches it on first visit, so the size difference is paid by one
+# download; the loops inside it run several times a second for as long as
+# a camera preview is open. The measured cost of that choice, both ways,
+# is recorded in apps/web/BENCHMARKS.md.
+[profile.wasm-release]
+inherits = "release"
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+# The same module built the other way, kept so the trade above can be
+# re-measured rather than taken on faith:
+#   DOCSCAN_PROFILE=wasm-size apps/web/scripts/build-wasm.sh
+[profile.wasm-size]
+inherits = "wasm-release"
+opt-level = "z"
