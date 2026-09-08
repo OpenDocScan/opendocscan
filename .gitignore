@@ -6,3 +6,18 @@ apps/web/.certs/
 
 # Agent working state. Never published.
 .claude/
+
+# Flutter. The generated bridge under app/lib/src/rust/ and app/rust_builder/
+# IS committed — it is what makes the repo buildable without running codegen —
+# but nothing below is.
+app/build/
+app/.dart_tool/
+app/.flutter-plugins-dependencies
+app/ios/Pods/
+app/ios/.symlinks/
+app/ios/Flutter/Flutter.podspec
+app/ios/Flutter/ephemeral/
+app/android/.gradle/
+app/android/local.properties
+app/rust_builder/cargokit/build_tool/.dart_tool/
+*.iml

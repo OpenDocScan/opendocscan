@@ -8,6 +8,7 @@ members = [
     "crates/docscan-ocr",
     "crates/docscan-pdf",
     "crates/docscan-wasm",
+    "crates/docscan-ffi",
 ]
 
 [workspace.package]
@@ -16,11 +17,19 @@ license = "MIT OR Apache-2.0"
 
 # Pinned centrally so every crate — including the wasm32 build, where each
 # unused codec is dead weight shipped over the wire — agrees on one lean
-# feature set. The browser decodes camera and imported files itself and
-# hands the core raw RGBA, so the only decoder the core needs is PNG (for
-# desktop tests and fixtures) and the only encoder is JPEG (for PDF
-# export). Turning the default set back on pulls in AVIF, EXR, and TIFF
+# feature set. Turning the default set back on pulls in AVIF, EXR and TIFF
 # support that nothing here calls.
+#
+# Both codecs are load-bearing, for different callers. The browser decodes
+# camera and imported files itself and hands the core raw RGBA, so on the web
+# PNG is only for fixtures and JPEG only for PDF export. The *mobile* bridge is
+# the opposite: `docscan-ffi` receives a photograph as JPEG bytes and the core
+# decodes it, so trimming `jpeg` to "encoder only" reasoning would break the
+# camera on both phones. `docscan-ffi` has a test for exactly that.
+#
+# Neither build can decode HEIC, which is what an iPhone stores by default —
+# capture goes through the camera plugin and arrives as JPEG, but a file picked
+# out of the Photos library may not. It surfaces as a decode error, not a crash.
 [workspace.dependencies]
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 imageproc = { version = "0.25", default-features = false }

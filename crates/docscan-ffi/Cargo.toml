@@ -1,0 +1,32 @@
+[package]
+# Underscored, where every sibling crate is hyphenated, and it has to be.
+# cargokit reads `[package] name` verbatim and then looks on disk for
+# `lib<name>.so`; Rust writes `libdocscan_ffi.so`, because it converts hyphens
+# in a crate name to underscores. Named `docscan-ffi`, cargokit builds the
+# library, looks for `libdocscan-ffi.so`, finds nothing, and copies nothing —
+# with no error at all. The Gradle task reports success, the jniLibs folders
+# are created and left empty, and the failure surfaces much later as
+# `dlopen failed: library "libdocscan_ffi.so" not found` at app startup.
+name = "docscan_ffi"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+docscan-core = { path = "../docscan-core" }
+flutter_rust_bridge = "=2.13.0"
+
+[dev-dependencies]
+image = { workspace = true }
+
+# cdylib for Android, staticlib for iOS, lib so `cargo test` can see the crate
+# as an ordinary Rust library on the host.
+[lib]
+crate-type = ["cdylib", "staticlib", "lib"]
+
+# `flutter_rust_bridge_codegen` sets this when it runs `cargo expand` to read
+# the API surface. It is never set by an ordinary build, so rustc reports it as
+# an unknown cfg; declaring it here keeps `cargo clippy` clean without
+# suppressing genuine cfg typos elsewhere.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

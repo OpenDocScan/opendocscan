@@ -8,7 +8,10 @@
 //
 //   node scripts/make-assets.mjs
 //
-// Writes into  apps/web/icons/  and  ../../../opendocscan-website-deploy/ .
+// Writes into  apps/web/icons/ , ../../../opendocscan-website-deploy/ , and the
+// Flutter app's Android mipmaps and iOS AppIcon set. Four surfaces, one mark —
+// which is the whole point: a home-screen icon drawn separately from the
+// browser tab icon is two different pictures of the same product.
 //
 // The SVGs hardcode their colours. That is not a lapse: an <img>-loaded SVG can
 // read neither a webfont nor a custom property, so an export context has to
@@ -24,6 +27,10 @@ import { fileURLToPath } from 'node:url';
 const WEB_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 const APP_ICONS = join(WEB_DIR, 'icons');
 const SITE = join(WEB_DIR, '..', '..', '..', 'opendocscan-website-deploy');
+const FLUTTER = join(WEB_DIR, '..', '..', 'app');
+const ANDROID_RES = join(FLUTTER, 'android', 'app', 'src', 'main', 'res');
+const IOS_ICONS = join(
+  FLUTTER, 'ios', 'Runner', 'Assets.xcassets', 'AppIcon.appiconset');
 
 const GROUND = '#111111'; // the family tile ground, as on every sibling mark
 const PAPER = '#f8f8f7'; // --gray-050
@@ -62,14 +69,30 @@ ${glyph}
 </svg>
 `;
 
+// An adaptive icon is two layers, and Android composites them itself. The
+// foreground is the glyph on transparency inside the guaranteed-visible middle
+// (72 of 108 units); the background is a flat colour in XML. Shipping only a
+// legacy `ic_launcher` instead is what puts a square tile inside the
+// launcher's circular mask, which is how this looked next to every other app
+// on the first attempt.
+const foregroundSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="OpenDocScan">
+  <g transform="translate(256 256) scale(0.60) translate(-256 -256)">
+${glyph}
+  </g>
+</svg>
+`;
+
 // ---------------------------------------------------------------- rendering
 
-async function png(page, svg, size) {
+async function png(page, svg, size, { opaque = false } = {}) {
   await page.setViewportSize({ width: size, height: size });
+  const ground = opaque ? GROUND : 'transparent';
   await page.setContent(
-    `<style>html,body{margin:0;padding:0;background:transparent}svg{display:block;width:${size}px;height:${size}px}</style>${svg}`,
+    `<style>html,body{margin:0;padding:0;background:${ground}}svg{display:block;width:${size}px;height:${size}px}</style>${svg}`,
   );
-  return page.screenshot({ omitBackground: true });
+  // App Store Connect rejects a 1024 marketing icon that carries an alpha
+  // channel, so the iOS set is flattened onto the mark's own ground.
+  return page.screenshot({ omitBackground: !opaque });
 }
 
 // An ICO is a header, one directory entry per image, then the images. Modern
@@ -186,6 +209,83 @@ w(APP_ICONS, 'icon-maskable.png', await png(page, maskableSvg, 512));
 for (const size of [16, 32, 48, 180, 192, 512]) {
   w(SITE, `icon-${size}.png`, await png(page, iconSvg, size));
 }
+
+// --- the phone app ---------------------------------------------------------
+
+// Android launcher icons. Square and round both point at the same drawing;
+// the round one is masked by the launcher, and the mark's ground already
+// bleeds to the edge, so it survives the crop.
+const ANDROID_MIPMAPS = {
+  'mipmap-mdpi': 48,
+  'mipmap-hdpi': 72,
+  'mipmap-xhdpi': 96,
+  'mipmap-xxhdpi': 144,
+  'mipmap-xxxhdpi': 192,
+};
+for (const [dir, size] of Object.entries(ANDROID_MIPMAPS)) {
+  const target = join(ANDROID_RES, dir);
+  mkdirSync(target, { recursive: true });
+  // The legacy icon, for launchers older than API 26.
+  writeFileSync(join(target, 'ic_launcher.png'), await png(page, maskableSvg, size));
+  // The adaptive foreground. 108/48 times the nominal size, because an
+  // adaptive icon is authored at 108dp for a 48dp slot.
+  writeFileSync(
+    join(target, 'ic_launcher_foreground.png'),
+    await png(page, foregroundSvg, Math.round((size * 108) / 48)),
+  );
+}
+written.push('and   mipmap-*/ic_launcher{,_foreground}.png'.padEnd(34) +
+  `${Object.keys(ANDROID_MIPMAPS).length} densities`);
+
+// The two-layer declaration, and the ground as a colour rather than a bitmap.
+const anydpi = join(ANDROID_RES, 'mipmap-anydpi-v26');
+mkdirSync(anydpi, { recursive: true });
+const adaptive = `<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>
+`;
+writeFileSync(join(anydpi, 'ic_launcher.xml'), adaptive);
+writeFileSync(join(anydpi, 'ic_launcher_round.xml'), adaptive);
+
+const values = join(ANDROID_RES, 'values');
+mkdirSync(values, { recursive: true });
+writeFileSync(
+  join(values, 'ic_launcher_background.xml'),
+  `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The family tile ground. Generated by apps/web/scripts/make-assets.mjs;
+         edit the mark there, not here. -->
+    <color name="ic_launcher_background">${GROUND}</color>
+</resources>
+`,
+);
+written.push('and   mipmap-anydpi-v26 + values'.padEnd(34) + 'adaptive icon');
+
+// iOS. The filenames are fixed by Contents.json, which Xcode reads literally —
+// a missing one is a build warning and a blank icon on the home screen, and
+// the 1024 marketing icon must have no alpha channel or App Store Connect
+// rejects the upload.
+const IOS_SIZES = [
+  ['Icon-App-20x20@1x.png', 20], ['Icon-App-20x20@2x.png', 40],
+  ['Icon-App-20x20@3x.png', 60], ['Icon-App-29x29@1x.png', 29],
+  ['Icon-App-29x29@2x.png', 58], ['Icon-App-29x29@3x.png', 87],
+  ['Icon-App-40x40@1x.png', 40], ['Icon-App-40x40@2x.png', 80],
+  ['Icon-App-40x40@3x.png', 120], ['Icon-App-60x60@2x.png', 120],
+  ['Icon-App-60x60@3x.png', 180], ['Icon-App-76x76@1x.png', 76],
+  ['Icon-App-76x76@2x.png', 152], ['Icon-App-83.5x83.5@2x.png', 167],
+  ['Icon-App-1024x1024@1x.png', 1024],
+];
+for (const [name, size] of IOS_SIZES) {
+  // iOS applies its own corner mask, so it gets the square-ground drawing
+  // rather than the rounded tile — a rounded icon inside iOS's mask shows a
+  // pale halo at the corners.
+  const data = await png(page, maskableSvg, size, { opaque: true });
+  writeFileSync(join(IOS_ICONS, name), data);
+}
+written.push(`ios   AppIcon.appiconset`.padEnd(34) + `${IOS_SIZES.length} sizes`);
 
 w(
   SITE,

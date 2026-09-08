@@ -44,11 +44,22 @@ crates/
   docscan-ocr         text recognition glue
   docscan-pdf         PDF assembly, with an invisible text layer
   docscan-wasm        the wasm32-unknown-unknown boundary
-apps/web              the app itself — no build step but the Rust one
+  docscan-ffi         the Android/iOS boundary
+apps/web              the browser app — no build step but the Rust one
+app                   the Android and iOS app (Flutter)
 ```
 
-The same core targets iOS and Android unchanged; the web build is
-`wasm32-unknown-unknown` and 138 KB over the wire.
+One core, three boundaries. The browser gets it as `wasm32-unknown-unknown` —
+138 KB over the wire — and the phones get the same crates cross-compiled
+natively through `docscan-ffi`. No image processing is written twice, and none
+of it lives in Dart or JavaScript.
+
+**The browser app is complete; the phone app is at M1.** On Android and iOS a
+photograph currently crosses into the core and comes back measured — the
+bridge, the camera, the file picker and the permission states are wired and
+tested on both platforms. Detection, correction, filtering and PDF export come
+next; the core already does all of them, which is what the browser app runs on
+today. See `app/README.md`.
 
 ## Building and running
 
