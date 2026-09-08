@@ -3,3 +3,6 @@ apps/web/src/wasm/
 node_modules/
 apps/web/node_modules/
 apps/web/.certs/
+
+# Agent working state. Never published.
+.claude/
