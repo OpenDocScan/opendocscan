@@ -35,7 +35,7 @@ Nothing to install, nothing to update.
 
 ### Android — release candidate
 
-### → **[Download the latest APK](https://github.com/OpenDocScan/opendocscan/releases/latest)**
+### → **[Download the newest build](https://github.com/OpenDocScan/opendocscan/releases)**
 
 A native build, published for testing. It is **early**: it takes a photograph,
 from the camera or your photo library, as far as the scanning engine and back —
@@ -45,7 +45,9 @@ browser.
 
 To install it:
 
-1. Download `OpenDocScan-v0.1.0-rc.1.apk` from the release page.
+1. Open the [releases page](https://github.com/OpenDocScan/opendocscan/releases) and take
+   the `.apk` from the release at the top — every build so far is a release
+   candidate, so `/releases/latest` deliberately does not point at one.
 2. Open it. Android will warn you it came from outside the Play Store, because
    it did — allow installs from your browser or file manager when asked.
 3. The build is signed with a debug key, so that warning is expected. Check the
