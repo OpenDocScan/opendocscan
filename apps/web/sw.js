@@ -7,7 +7,7 @@
 // by its marketing. If a future dependency ever tried to phone home, it
 // would fail loudly here instead of succeeding quietly.
 
-const VERSION = 'v3';
+const VERSION = 'v4';
 const SHELL_CACHE = `opendocscan-shell-${VERSION}`;
 const ASSET_CACHE = `opendocscan-assets-${VERSION}`;
 
@@ -18,6 +18,7 @@ const ASSET_CACHE = `opendocscan-assets-${VERSION}`;
 const SHELL = [
   './',
   'index.html',
+  'account.html',
   'manifest.webmanifest',
   // The design tokens, and the two faces they name. Missing from the shell,
   // the app comes back from a cold offline start unstyled and in Times — which
@@ -75,24 +76,55 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// The account server, and the only cross-origin host this app may reach.
+//
+// Kept in step with `src/openapps.js`, which is the source of truth — a service
+// worker cannot import from it, so the end-to-end suite asserts the two agree
+// rather than trusting anyone to remember. It is only reachable from the
+// account page; see below.
+const ACCOUNT_ORIGIN = 'https://auth.opendocscan.com';
+const ACCOUNT_PAGES = ['/account', '/account.html'];
+
+function blocked(href) {
+  console.warn('[sw] blocked a cross-origin request:', href);
+  return new Response('OpenDocScan does not make requests to other servers.', {
+    status: 403,
+    statusText: 'Blocked by OpenDocScan',
+  });
+}
+
+// The account host is allowed, but only for the page whose whole job is the
+// account. Allowing it origin-wide would mean the scanner could reach it, and
+// the scanner reaching any server at all is the thing this worker exists to
+// prevent. Which page asked is knowable: the fetch event names its client.
+async function accountRequest(event, request) {
+  const client = event.clientId ? await self.clients.get(event.clientId) : null;
+  const from = client ? new URL(client.url).pathname : '';
+  if (!ACCOUNT_PAGES.includes(from)) return blocked(request.url);
+  return fetch(request);
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  if (request.method !== 'GET') return;
-
   const url = new URL(request.url);
 
-  // The enforcement. Nothing in this app has any business talking to
-  // another origin, so nothing is allowed to.
+  // The enforcement, and it covers every method. It used to return early on
+  // anything but GET, which left a POST to another origin untouched — so the
+  // guarantee the README describes was true of reads and not of writes. Sign-in
+  // is exactly a cross-origin POST, so that gap had to close in the same change
+  // that opened a hole in it deliberately.
   if (url.origin !== self.location.origin) {
-    console.warn('[sw] blocked a cross-origin request:', url.href);
-    event.respondWith(
-      new Response('OpenDocScan does not make requests to other servers.', {
-        status: 403,
-        statusText: 'Blocked by OpenDocScan',
-      }),
-    );
+    if (url.origin === ACCOUNT_ORIGIN) {
+      event.respondWith(accountRequest(event, request));
+      return;
+    }
+    event.respondWith(blocked(request.url));
     return;
   }
+
+  // Same-origin writes are not this worker's business, and caching them would
+  // be wrong.
+  if (request.method !== 'GET') return;
 
   event.respondWith(serve(request));
 });

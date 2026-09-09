@@ -6,8 +6,8 @@ Photograph a document, get a real scan: straightened, cleaned, and searchable.
 
 Point a phone at a page. OpenDocScan finds the edges of the sheet, corrects the
 perspective, cleans the lighting, reads the text, and writes a multi-page PDF
-you can search and select from. No account, no watermark, no page limit, and
-nothing to install.
+you can search and select from. No sign-up, no watermark, no page limit, and
+nothing to install. There is an optional account, and nothing is behind it.
 
 Everything runs on your own device. Unlike a native scanner app, that is a claim
 you can check yourself — see [Verifying it](#verifying-it).

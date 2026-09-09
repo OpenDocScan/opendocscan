@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>OpenDocScan</title>
-    <meta name="description" content="Scan documents to PDF entirely on your device. No account, no watermark, no upload." />
+    <meta name="description" content="Scan documents to PDF entirely on your device. No sign-up, no watermark, no upload." />
     <meta name="theme-color" content="#111111" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
@@ -47,7 +47,22 @@
       <section class="view" id="view-library" data-view="library">
         <header class="bar">
           <h1 class="wordmark"><span class="prefix">Open</span>DocScan<span class="dot">.</span></h1>
-          <button class="icon-btn" id="btn-about" aria-label="About this app">?</button>
+          <span class="bar-actions">
+            <button class="icon-btn" id="btn-about" aria-label="About this app">?</button>
+            <!-- The account, as a quiet way in rather than a call to action. It
+                 navigates to its own page: signing in redirects the whole
+                 window, and doing that from here would throw away whatever the
+                 scanner was holding. -->
+            <a class="icon-btn account-btn" href="./account" id="btn-account"
+               aria-label="Account" title="Account">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                   aria-hidden="true">
+                <circle cx="12" cy="8" r="3.6" />
+                <path d="M4.8 20a7.2 7.2 0 0 1 14.4 0" />
+              </svg>
+            </a>
+          </span>
         </header>
 
         <div class="pad">
@@ -72,7 +87,7 @@
           <div class="empty-mark" aria-hidden="true">▤</div>
           <h2>Nothing scanned yet</h2>
           <p>
-            Everything you scan stays in this browser on this device. No account, no upload, no
+            Everything you scan stays in this browser on this device. No sign-up, no upload, no
             watermark, no page limit.
           </p>
         </div>

@@ -278,9 +278,16 @@ function scanBundleForEndpoints() {
   // `tokens` belongs here as much as `vendor` does: a design-system stylesheet
   // is exactly the kind of file that arrives with an @import from a font CDN,
   // and it is linked from the page the same way everything else is.
-  const roots = ['src', 'vendor', 'tokens', 'sw.js', 'index.html', 'manifest.webmanifest'];
+  const roots = [
+    'src', 'vendor', 'tokens',
+    'sw.js', 'index.html', 'account.html', 'manifest.webmanifest',
+  ];
+  // The two account hosts are this product's own, and they are the only
+  // third-party-looking names allowed. The platform's own domain is not on this
+  // list on purpose: a client that names it has skipped the masking, and that
+  // is the regression this assertion exists to catch.
   const allowed =
-    /^(localhost|127\.0\.0\.1|(www\.)?w3\.org|schema\.org|(www\.)?example\.(com|org))$/;
+    /^(localhost|127\.0\.0\.1|(www\.)?w3\.org|schema\.org|(www\.)?example\.(com|org)|(auth|gateway)\.opendocscan\.com)$/;
   const found = [];
 
   const walk = (relative) => {

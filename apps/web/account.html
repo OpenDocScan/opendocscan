@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en" class="oa-auto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Account — OpenDocScan</title>
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#111111" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/icon-180.png" />
+
+    <link rel="stylesheet" href="tokens/css/colors.css" />
+    <link rel="stylesheet" href="tokens/css/typography.css" />
+    <link rel="stylesheet" href="tokens/css/spacing.css" />
+    <link rel="stylesheet" href="tokens/css/radius.css" />
+    <link rel="stylesheet" href="tokens/css/motion.css" />
+    <link rel="stylesheet" href="tokens/css/fonts.css" />
+    <link rel="stylesheet" href="src/styles.css" />
+
+    <!--
+      The account is its own page, and that is the point of it.
+
+      <openapps-login>'s Google button navigates the whole window out to the
+      identity provider and back. On a page holding work — a photographed page
+      mid-crop, an unsaved document, a running export — signing in destroys it.
+      So the scanner never mounts this element, and this page never scans.
+    -->
+    <style>
+      .account-page {
+        max-width: 560px;
+        margin: 0 auto;
+        padding: var(--space-6) var(--space-5) var(--space-16);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-6);
+      }
+
+      .account-page h1 {
+        font-size: var(--text-xl);
+        font-weight: var(--weight-medium);
+        color: var(--ink);
+        margin: 0;
+      }
+
+      /* The one thing this page has to say that the elements do not: an account
+         is optional here, and scanning does not need it. Someone arriving from
+         a scanner has every reason to wonder what it is for. */
+      .account-note {
+        color: var(--ink-dim);
+        font-size: 14px;
+        line-height: 1.55;
+        margin: 0;
+      }
+      .account-note strong { color: var(--ink); font-weight: 600; }
+
+      .signed-out-only[hidden],
+      .signed-in-only[hidden] { display: none !important; }
+
+      .account-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+      }
+      .account-section h2 {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--ink);
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <section class="view" data-view="account" style="display: flex">
+        <header class="bar">
+          <a class="icon-btn" id="btn-back" href="./" aria-label="Back to the scanner">←</a>
+          <h1 class="wordmark"><span class="prefix">Open</span>DocScan<span class="dot">.</span></h1>
+          <span class="icon-btn" aria-hidden="true" style="visibility: hidden">←</span>
+        </header>
+
+        <div class="pad account-page">
+          <h1>Account</h1>
+
+          <p class="account-note">
+            An account is <strong>optional</strong>. Every part of OpenDocScan — scanning,
+            straightening, text recognition, exporting a PDF — runs on this device and works
+            signed out, with no limit. Signing in carries credits across our apps; nothing
+            here is behind it.
+          </p>
+
+          <!-- variant="panel" makes this element the sign-in surface rather than
+               three bare buttons, and all three framing properties are set: the
+               defaults name a platform the person reading has never heard of,
+               above a request for a password, which reads exactly like the thing
+               people are warned about. -->
+          <openapps-login
+            variant="panel"
+            mark="▤"
+            heading="Sign in to OpenDocScan"
+            description="One account across our apps. You do not need it here — nothing on this page is behind it."
+          ></openapps-login>
+
+          <!-- Mounted only once there is a session. Each renders its own
+               signed-out placeholder, so unconditionally these would stack three
+               restatements of the sentence on the card above. -->
+          <div class="signed-in-only" id="signed-in" hidden>
+            <div class="account-section">
+              <h2>Balance</h2>
+              <openapps-credits poll-seconds="30"></openapps-credits>
+            </div>
+
+            <div class="account-section">
+              <h2>Buy credits</h2>
+              <openapps-buy></openapps-buy>
+            </div>
+
+            <div class="account-section">
+              <h2>Where they went</h2>
+              <openapps-history></openapps-history>
+            </div>
+          </div>
+
+          <p class="account-note">
+            Signing in sends nothing about your scans. Your documents stay in this browser on
+            this device — the account server never sees them, and there is no code path from
+            the scanner to it.
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <script type="module">
+      import { configure, getClient, onChange } from './vendor/openapps/openapps-ui.js';
+      import { OPENAPPS_BASE_URL } from './src/openapps.js';
+
+      configure({ baseUrl: OPENAPPS_BASE_URL });
+
+      // The three elements below the card appear only with a session. Read the
+      // client's local view rather than asking the server — this decides what to
+      // show, not whether anything is authorised.
+      const panel = document.getElementById('signed-in');
+      const reflect = () => {
+        const client = getClient();
+        panel.hidden = !client?.isLoggedIn;
+      };
+      reflect();
+      onChange(reflect);
+    </script>
+  </body>
+</html>

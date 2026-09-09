@@ -136,6 +136,30 @@ body {
   color: color-mix(in oklab, var(--tint) 68%, var(--white));
 }
 
+/* The header's right-hand cluster. The account sits beside the about button
+   rather than replacing it, and both stay on the right half of the bar on
+   every screen. */
+.bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Quiet until touched: this is a way in, not something to press. Muted, round,
+   and the same size as its neighbour so the pair reads as one control group. */
+.account-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-dim);
+  border-radius: 999px;
+  text-decoration: none;
+}
+.account-btn:hover,
+.account-btn:focus-visible {
+  color: var(--ink);
+}
+
 .icon-btn,
 .text-btn {
   background: none;
