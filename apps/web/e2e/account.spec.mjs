@@ -20,7 +20,7 @@ const WEB_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 // cannot answer these: its origin is not in `allowed_origins` and never should
 // be, so a local run would fail CORS for a reason that says nothing about the
 // product. Override for a staging host.
-const BASE = process.env.BASE_URL ?? 'https://app.opendocscan.com';
+const BASE = process.env.BASE_URL ?? 'https://opendocscan.com';
 
 const tests = [];
 const test = (name, fn) => tests.push({ name, fn });
@@ -185,20 +185,33 @@ test('the page says an account is optional, because it is', async (page) => {
 test('the account control is in the header, on the right, and leaves the app',
   async (page) => {
     await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+    // The page's own header, not the scanner's in-frame bar. Since the app and
+    // the page describing it became one document, the scanner's own titlebar
+    // sits in the middle of the page inside its stage — so the entry point a
+    // visitor sees at the top right is the site nav's, and that is the one this
+    // has to be true of.
     const box = await page.evaluate(() => {
-      const el = document.getElementById('btn-account');
+      const el = document.querySelector('.site-header a[href*="account"]');
       if (!el) return null;
       const r = el.getBoundingClientRect();
-      return { x: r.x, width: r.width, top: r.top, href: el.getAttribute('href'),
-               label: el.getAttribute('aria-label'), title: el.getAttribute('title') };
+      return { centre: r.x + r.width / 2, top: r.top, href: el.getAttribute('href'),
+               viewport: window.innerWidth };
     });
-    if (!box) throw new Error('no account control in the header');
-    if (box.x + box.width / 2 < window_width(page) / 2) {
-      throw new Error('the account control is not on the right half');
+    if (!box) throw new Error('no account link in the page header');
+    if (box.centre < box.viewport / 2) {
+      throw new Error('the account link is not on the right half');
     }
-    if (box.top > 120) throw new Error('the account control is not near the top');
+    if (box.top > 120) throw new Error('the account link is not near the top');
     if (!/account/.test(box.href)) throw new Error(`it points at ${box.href}`);
-    if (box.label !== 'Account' || box.title !== 'Account') {
+
+    // And the scanner's own bar keeps its labelled control, for the routes
+    // where the page header has scrolled away.
+    const inApp = await page.evaluate(() => {
+      const el = document.getElementById('btn-account');
+      return el && { label: el.getAttribute('aria-label'), title: el.getAttribute('title') };
+    });
+    if (!inApp) throw new Error('the scanner lost its own account control');
+    if (inApp.label !== 'Account' || inApp.title !== 'Account') {
       throw new Error('aria-label and title must both read "Account"');
     }
   });
@@ -232,8 +245,7 @@ test('the scanner still cannot reach the account host', async (page) => {
 
 // ------------------------------------------------------------------- runner
 
-let width = 1280;
-function window_width() { return width; }
+const width = 1280;
 
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
 const context = await browser.newContext({ viewport: { width, height: 900 } });

@@ -286,8 +286,14 @@ function scanBundleForEndpoints() {
   // third-party-looking names allowed. The platform's own domain is not on this
   // list on purpose: a client that names it has skipped the masking, and that
   // is the regression this assertion exists to catch.
+  // Our own domain and the two account hosts, plus github.com — which appears
+  // only as the source link's href and as nothing the page ever fetches. The
+  // proof of that is the runtime check above, which records every request the
+  // app actually makes and fails if one leaves the origin; this static scan is
+  // the second net, and it is here to catch a *new* host being added, not to
+  // relitigate an anchor.
   const allowed =
-    /^(localhost|127\.0\.0\.1|(www\.)?w3\.org|schema\.org|(www\.)?example\.(com|org)|(auth|gateway)\.opendocscan\.com)$/;
+    /^(localhost|127\.0\.0\.1|(www\.)?w3\.org|schema\.org|(www\.)?example\.(com|org)|([a-z]+\.)?opendocscan\.com|github\.com)$/;
   const found = [];
 
   const walk = (relative) => {
@@ -342,6 +348,41 @@ if (offOrigin.length === 0) {
   failures += 1;
   console.log('  FAIL requests left this origin:');
   for (const url of offOrigin) console.log(`       ${url}`);
+}
+
+// The scanner and the product page share a document now, so the marketing
+// stylesheet and the app's are loaded together. Unprefixed they collided on
+// seven class names — btn, card, dot, grid, hint, prefix, primary — all of
+// which the app uses, and the marketing sheet loads second so it would have
+// won silently. Measured rather than trusted to a comment.
+function measureStylesheetOverlap() {
+  const read = (name) => {
+    const text = readFileSync(`${WEB_DIR}/src/${name}`, 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+    const classes = new Set([...text.matchAll(/\.([a-zA-Z][\w-]*)/g)].map((m) => m[1]));
+    const bare = new Set();
+    for (const [, sel] of text.matchAll(/(?:^|\})\s*([a-zA-Z][\w, .:[\]()>-]*)\s*\{/g)) {
+      for (const part of sel.split(',')) {
+        const p = part.trim();
+        if (/^[a-z]+[0-9]?$/.test(p)) bare.add(p);
+      }
+    }
+    return { classes, bare };
+  };
+  const site = read('site.css');
+  const app = read('styles.css');
+  const shared = [...site.classes].filter((c) => app.classes.has(c));
+  return { shared, bare: [...site.bare] };
+}
+
+const overlap = measureStylesheetOverlap();
+if (overlap.shared.length === 0 && overlap.bare.length === 0) {
+  console.log('  ok   the marketing stylesheet cannot reach the app');
+} else {
+  failures += 1;
+  console.log('  FAIL the marketing stylesheet can reach the app:');
+  if (overlap.shared.length) console.log(`       shared classes: ${overlap.shared.join(', ')}`);
+  if (overlap.bare.length) console.log(`       bare element rules: ${overlap.bare.join(', ')}`);
 }
 
 const endpoints = scanBundleForEndpoints();

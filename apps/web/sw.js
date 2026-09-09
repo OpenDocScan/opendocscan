@@ -7,7 +7,7 @@
 // by its marketing. If a future dependency ever tried to phone home, it
 // would fail loudly here instead of succeeding quietly.
 
-const VERSION = 'v4';
+const VERSION = 'v5';
 const SHELL_CACHE = `opendocscan-shell-${VERSION}`;
 const ASSET_CACHE = `opendocscan-assets-${VERSION}`;
 
@@ -19,6 +19,7 @@ const SHELL = [
   './',
   'index.html',
   'account.html',
+  'privacy.html',
   'manifest.webmanifest',
   // The design tokens, and the two faces they name. Missing from the shell,
   // the app comes back from a cold offline start unstyled and in Times — which
@@ -32,6 +33,7 @@ const SHELL = [
   'tokens/fonts/Geist-Regular.woff2',
   'tokens/fonts/Geist-Medium.woff2',
   'src/styles.css',
+  'src/site.css',
   'src/app.js',
   'src/store.js',
   'src/scanner.js',

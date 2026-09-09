@@ -2,7 +2,7 @@
 
 Photograph a document, get a real scan: straightened, cleaned, and searchable.
 
-**[opendocscan.com](https://opendocscan.com)** · **[open the scanner](https://app.opendocscan.com)**
+**[opendocscan.com](https://opendocscan.com)** — the scanner and everything about it, one page
 
 Point a phone at a page. OpenDocScan finds the edges of the sheet, corrects the
 perspective, cleans the lighting, reads the text, and writes a multi-page PDF
@@ -23,10 +23,11 @@ picking one.
 
 ### In your browser — ready
 
-### → **[app.opendocscan.com](https://app.opendocscan.com)**
+### → **[opendocscan.com](https://opendocscan.com)**
 
-This is the complete product. Every feature listed below works here, on a phone,
-a tablet or a laptop, in any modern browser.
+This is the complete product, and it is running on the front page — not a
+screenshot of it. Every feature listed below works there, on a phone, a tablet
+or a laptop, in any modern browser.
 
 On a phone it is worth adding to your home screen — **Share → Add to Home
 Screen** on iOS, **⋮ → Add to Home screen** on Android. It then opens without
@@ -104,7 +105,7 @@ source](#the-phone-app). Needs iOS or iPadOS 15 or newer.
 Most scanner apps say your documents stay private. In a native app that is a
 promise you have no way to audit. Here it is something you can watch happen:
 
-1. Open [app.opendocscan.com](https://app.opendocscan.com) and let it load.
+1. Open [opendocscan.com](https://opendocscan.com) and let it load.
 2. Open your browser's developer tools and switch to the **Network** panel.
 3. Clear the list, then scan or import a page and export a PDF.
 4. Read the list. After the app itself has loaded, there is nothing in it.

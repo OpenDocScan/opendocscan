@@ -76,6 +76,13 @@ body {
   position: relative;
 }
 
+
+/* A standalone page — the account — is prose, and prose has to scroll. The
+   scanner's views clip on purpose; this one must not. */
+.view.is-scrollable {
+  overflow-y: auto;
+}
+
 .view {
   position: absolute;
   inset: 0;

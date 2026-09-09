@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en" class="oa-auto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy — OpenDocScan</title>
+    <meta
+      name="description"
+      content="OpenDocScan collects nothing, because there is no server for it to collect anything to. What that means precisely, and how to verify it yourself."
+    />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#111111" />
+    <link rel="canonical" href="https://opendocscan.com/privacy.html" />
+
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icon-180.png" />
+
+    <!-- A secondary page gets its own og: block. It gets pasted too. -->
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="OpenDocScan" />
+    <meta property="og:url" content="https://opendocscan.com/privacy.html" />
+    <meta property="og:title" content="Privacy — OpenDocScan" />
+    <meta
+      property="og:description"
+      content="Nothing you scan leaves your device, and you can check that in the Network panel rather than take our word for it."
+    />
+    <meta property="og:image" content="https://opendocscan.com/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="OpenDocScan: a document scanner that runs entirely in a browser tab." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Privacy — OpenDocScan" />
+    <meta
+      name="twitter:description"
+      content="Nothing you scan leaves your device, and you can check that in the Network panel."
+    />
+    <meta name="twitter:image" content="https://opendocscan.com/og-image.png" />
+
+    <link rel="stylesheet" href="tokens/css/colors.css" />
+    <link rel="stylesheet" href="tokens/css/typography.css" />
+    <link rel="stylesheet" href="tokens/css/spacing.css" />
+    <link rel="stylesheet" href="tokens/css/radius.css" />
+    <link rel="stylesheet" href="tokens/css/motion.css" />
+    <link rel="stylesheet" href="tokens/css/fonts.css" />
+    <link rel="stylesheet" href="src/styles.css" />
+    <link rel="stylesheet" href="src/site.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="site-wrap">
+        <a class="site-brand" href="/">
+          <img src="icons/icon.svg" alt="" />
+          <span><span class="site-prefix">Open</span>DocScan<span class="site-dot">.</span></span>
+        </a>
+        <nav class="site-nav">
+          <a href="/#how">How it works</a>
+          <a href="/#faq">FAQ</a>
+          <a class="site-keep" href="/app/">Open the app</a>
+        </nav>
+      </div>
+    </header>
+
+    <div class="site-wrap">
+      <article class="site-copy site-prose">
+        <p class="site-updated">Last updated 8 September 2026</p>
+        <h1>Privacy</h1>
+
+        <p>
+          OpenDocScan collects nothing about you and nothing about what you scan. That is
+          not a policy we are choosing to follow — it is a consequence of how the product is
+          built, and the rest of this page is the detail behind that claim.
+        </p>
+
+        <h2>What we collect</h2>
+        <p>Nothing. Specifically:</p>
+        <ul>
+          <li>
+            <strong>No account, unless you choose one.</strong> Nothing in the scanner is
+            behind a sign-in and you never have to create one. If you do sign in — which
+            exists so credits carry across our apps — our account server holds what you gave
+            the provider you signed in with, and nothing else. It never receives a document,
+            a page, or anything derived from one.
+          </li>
+          <li>
+            <strong>No documents.</strong> The images you scan and the PDFs you build never
+            leave your device. There is no upload step, and no server of ours that could
+            receive one.
+          </li>
+          <li>
+            <strong>No analytics.</strong> No tracking script, no pixel, no cookie, no
+            fingerprinting, no third-party embed — on this site or in the app.
+          </li>
+          <li>
+            <strong>No advertising.</strong> Nothing here is sold to anyone, because there is
+            nothing collected to sell.
+          </li>
+        </ul>
+
+        <h2>Where your documents live</h2>
+        <p>
+          In your browser's own storage, on the device you scanned them with. The app asks
+          the browser to make that storage persistent and tells you whether the browser
+          agreed. Clearing your browsing data for this site deletes your library, and we
+          cannot recover it — we never had a copy.
+        </p>
+        <p>
+          Because the storage is per-browser, your documents do not sync to your other
+          devices. That is the trade for not having an account.
+        </p>
+
+        <h2>How you can check this yourself</h2>
+        <p>
+          This is the part a native scanner app cannot offer. Open your browser's developer
+          tools, switch to the Network panel, and use the app. After the page and its
+          resources have loaded, scanning, recognising text and exporting a PDF produce no
+          further requests at all.
+        </p>
+        <p>Three mechanisms make that true, in order of how hard each is to subvert:</p>
+        <ul>
+          <li>
+            The scanning core is a WebAssembly module compiled from Rust with no HTTP client
+            and no networking dependency. There is no code path from it to a network.
+          </li>
+          <li>
+            The text-recognition engine and its language model are served from this site.
+            Left at their defaults they would be fetched from a public CDN, which would tell
+            a third party each time you scanned a document.
+          </li>
+          <li>
+            A service worker intercepts every request the page makes and answers anything
+            addressed to another origin with a 403 rather than forwarding it. A future
+            dependency that tried to phone home would break loudly instead of working
+            quietly.
+          </li>
+        </ul>
+        <p>
+          The automated test suite asserts the same thing on every run: it records every
+          request the app makes while driving a complete scan, and fails if any of them
+          leaves the origin.
+        </p>
+
+        <h2>What this website logs</h2>
+        <p>
+          The web server that hands you this page keeps ordinary access logs — the requested
+          path, a timestamp, the browser's user-agent string and the connecting IP address —
+          for a short period, to keep the server running and to spot abuse. They are not used
+          to build a profile of you, are not combined with anything else, and are not shared.
+          Nothing in them is connected to what you scan, because what you scan is never sent
+          here.
+        </p>
+
+        <h2>Children</h2>
+        <p>
+          The app is not directed at children and collects no personal information from
+          anyone, of any age.
+        </p>
+
+        <h2>Changes</h2>
+        <p>
+          If this policy changes, the date at the top of this page changes with it. Since the
+          product holds no data, a change here cannot retroactively expose anything you have
+          already scanned.
+        </p>
+
+        <h2>Contact</h2>
+        <p>
+          Questions about this policy:
+          <a href="mailto:opendocscan@proton.me">opendocscan@proton.me</a>.
+        </p>
+      </article>
+
+      <footer class="site-footer"><div class="site-wrap">
+        <nav>
+          <a href="/">Home</a>
+          <a href="/app/">Web app</a>
+        </nav>
+        <p>OpenDocScan is free and open source, under MIT or Apache-2.0.</p>
+      </div></footer>
+    </div>
+  </body>
+</html>
