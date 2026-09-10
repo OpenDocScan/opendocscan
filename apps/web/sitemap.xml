@@ -1,20 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Canonical URLs only, and every one of them must answer 200.
+
+  This listed https://opendocscan.com/app/ until 10 September 2026 — a leftover
+  from when the scanner had its own subdomain. After the consolidation that
+  path is a 301, and a redirect in a sitemap is a crawl error rather than a
+  page. /account is deliberately absent: it is noindex.
+-->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://opendocscan.com/</loc>
-    <lastmod>2026-09-08</lastmod>
-    <changefreq>monthly</changefreq>
+    <lastmod>2026-09-10</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://opendocscan.com/privacy.html</loc>
-    <lastmod>2026-09-08</lastmod>
+    <lastmod>2026-09-10</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://opendocscan.com/app/</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
   </url>
 </urlset>
