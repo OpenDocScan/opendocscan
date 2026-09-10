@@ -150,7 +150,7 @@ app                   the Android and iOS app (Flutter)
 
 No image processing is written twice, and none of it lives in Dart or
 JavaScript — those layers handle the camera, the file picker and the screen, and
-nothing else. The browser receives the core as WebAssembly, **138 KB over the
+nothing else. The browser receives the core as WebAssembly, **139 KB over the
 wire**; the phones get the same crates cross-compiled natively.
 
 ---

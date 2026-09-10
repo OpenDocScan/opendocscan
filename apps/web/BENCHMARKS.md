@@ -119,3 +119,37 @@ had not: a `brew list` left running in the background was taking half the
 machine. Every number above comes from an idle machine, and the before
 column is built from a `git worktree` of the previous commit so both sides
 are measured on the same hardware in the same minute.
+
+## The filters became spatial, 10 September 2026
+
+Enhance and Black & white were global — one histogram and one lookup table for
+the page, one cutoff at luma 128 for every pixel. That is correct for evenly
+lit input and useless on a photograph, because a shadow supplies both ends of
+the histogram itself and leaves the stretch nearly an identity.
+
+Measured on the same page rendered flat, and again with an ordinary hand-held
+lighting gradient:
+
+| | flat render | shadowed photo |
+|---|---|---|
+| original | 94.4% paper | 32.7% paper |
+| Enhance, global | 94.4% | **35.8%** |
+| Enhance, flattened first | 94.8% | **94.8%** |
+| B&W, fixed threshold | 96.0% paper / 4.0% ink | **84.4% / 15.6%** |
+| B&W, Sauvola | 94.3% / 5.7% | **94.4% / 5.6%** |
+
+15.6% ink on a text page is the shadowed corner turning solid black.
+
+Both new passes share one summed-area table, so a window mean is four lookups
+whatever the radius. What it costs, in the browser:
+
+    applyFilter enhance 825x1100      24.5 ms   <- the interactive preview size
+    applyFilter bw      1800x2400     58.8 ms
+    applyFilter enhance 1800x2400    116.8 ms
+
+The interactive path is the first line: the app derives a preview capped at
+1100px and filters that while the brightness slider moves. Full resolution runs
+once, on confirm, in the worker. The whole-scan measurement is unchanged at
+**zero long tasks**.
+
+The module grew 318,780 -> 321,190 bytes, 138,027 -> 139,161 gzipped.

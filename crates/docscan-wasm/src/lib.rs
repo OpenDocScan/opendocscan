@@ -190,8 +190,11 @@ pub fn apply_filter(
                 );
             }
         }
-        "bw" => docscan_filters::binarize_rgba(&mut rgba, brightness),
-        "enhance" => docscan_filters::enhance_rgba(&mut rgba, brightness),
+        // Both spatial, because both are applied to a photograph of a page
+        // rather than to a scan of one. The lighting is part of the input here,
+        // and neither a single lookup table nor a single cutoff can see it.
+        "bw" => docscan_filters::binarize_adaptive_rgba(&mut rgba, width, height, brightness),
+        "enhance" => docscan_filters::enhance_page_rgba(&mut rgba, width, height, brightness),
         other => return Err(JsError::new(&format!("unknown filter: {other}"))),
     }
 
