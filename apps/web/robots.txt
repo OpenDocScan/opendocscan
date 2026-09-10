@@ -1,4 +1,72 @@
+# Everything here is public and meant to be read — by people, by search
+# crawlers, and by the engines that answer questions in prose. All three are
+# welcome.
 User-agent: *
+Allow: /
+
+# Named explicitly rather than left to the wildcard above. Several of these
+# read only the block naming their own User-agent and ignore `*`, so being
+# allowed in general is not the same as being allowed by them — recorded on
+# opensubs as APP-47. Google-Extended in particular is a separate opt-in from
+# ordinary Search: a site can rank and still be invisible to the thing that
+# summarises it.
+#
+# It matters more here than for most products. This one's whole argument is
+# that the document never leaves your device, and that is a claim people check
+# by asking an assistant rather than by reading a landing page. Being quotable
+# is the point.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+User-agent: cohere-ai
 Allow: /
 
 Sitemap: https://opendocscan.com/sitemap.xml
