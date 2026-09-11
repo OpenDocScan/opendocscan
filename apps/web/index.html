@@ -3,130 +3,48 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>OpenDocScan — scan documents to PDF in your browser, free</title>
-    <meta
-      name="description"
-      content="Photograph a document and get a straightened, searchable multi-page PDF. Runs in your browser on any device, with native Android, iPhone and iPad builds in progress — nothing is uploaded. No sign-up, no watermark, no page limit, free and open source."
-    />
-    <meta name="robots" content="index, follow" />
-    <meta name="theme-color" content="#111111" />
+    <title>OpenDocScan — the scanner</title>
+    <!-- The app, on its own: for development, and as the half the site repo
+         composes around. opendocscan.com is one document — this app with the
+         product page wrapped around it — and the page lives in the private
+         site repo. It takes everything from the app-head marker to the end of
+         this head, and everything between app:begin and app:end.
 
-    <!-- One hostname. The scanner and the page describing it are the same
-         document, served from the apex: a subdomain is a separate site to a
-         search engine, so splitting them puts the page people find and the
-         page they can use on two hosts with half the signal each. -->
-    <link rel="canonical" href="https://opendocscan.com/" />
-
-    <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="icon" href="/favicon.ico" sizes="32x32" />
-    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
-    <link rel="apple-touch-icon" href="icons/icon-180.png" />
-
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="OpenDocScan" />
-    <meta property="og:url" content="https://opendocscan.com/" />
-    <meta property="og:title" content="OpenDocScan — scan documents to PDF in your browser" />
-    <meta
-      property="og:description"
-      content="Photograph a page, get a straightened searchable PDF. It all happens in the tab — nothing is uploaded, and you can watch the Network panel to check."
-    />
-    <meta property="og:image" content="https://opendocscan.com/og-image.png" />
-    <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta
-      property="og:image:alt"
-      content="OpenDocScan: a photographed page being straightened into a clean scan, entirely in a browser tab."
-    />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="OpenDocScan — scan documents to PDF in your browser" />
-    <meta
-      name="twitter:description"
-      content="Photograph a page, get a straightened searchable PDF. It all happens in the tab — nothing is uploaded."
-    />
-    <meta name="twitter:image" content="https://opendocscan.com/og-image.png" />
-
-    <!-- Static, so a crawler needs no JavaScript to read any of it. -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebApplication",
-        "name": "OpenDocScan",
-        "url": "https://opendocscan.com/",
-        "applicationCategory": "UtilitiesApplication",
-        "operatingSystem": "Any modern browser",
-        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
-      }
-    </script>
-
+         The design tokens sit ABOVE the marker on purpose: the page has its
+         own copy of them, so anything above the marker is not carried across
+         and cannot be shipped twice. Below it goes what is the app's alone. -->
     <link rel="stylesheet" href="tokens/css/colors.css" />
     <link rel="stylesheet" href="tokens/css/typography.css" />
     <link rel="stylesheet" href="tokens/css/spacing.css" />
     <link rel="stylesheet" href="tokens/css/radius.css" />
     <link rel="stylesheet" href="tokens/css/motion.css" />
     <link rel="stylesheet" href="tokens/css/fonts.css" />
+    <!-- app-head -->
     <link rel="stylesheet" href="src/styles.css" />
-    <!-- Loaded second, and every rule in it is prefixed or scoped so it cannot
-         reach the app. The two sheets collided on seven class names before
-         this was measured; e2e/scan.spec.mjs asserts the overlap stays zero. -->
-    <link rel="stylesheet" href="src/site.css" />
-
-    <link rel="modulepreload" href="src/store.js" />
-    <link rel="modulepreload" href="src/scanner.js" />
-    <link rel="modulepreload" href="src/app.js" />
+    <script type="module" src="src/app.js"></script>
   </head>
   <body>
-    <header class="site-header">
-      <div class="site-wrap">
-        <a class="site-brand" href="/">
-          <img src="icons/icon.svg" alt="" />
-          <span><span class="site-prefix">Open</span>DocScan<span class="site-dot">.</span></span>
-        </a>
-        <nav class="site-nav">
-          <a href="#how">How it works</a>
-          <a href="#apps">Apps</a>
-          <a href="#privacy">Privacy</a>
-          <a href="#faq">FAQ</a>
-          <a class="site-keep" href="/account">Account</a>
-        </nav>
-      </div>
+    <!-- A development bar, not the site header. It carries the slots app.js
+         fills by id so the app is usable on its own; on the composed page the
+         real header carries them and this bar is left behind, because it sits
+         outside the markers. -->
+    <header class="bar" id="dev-bar">
+      <span class="wordmark"><span class="prefix">Open</span>DocScan<span class="dot">.</span></span>
+      <span class="bar-actions">
+        <button class="icon-btn" id="btn-about" aria-label="About this app">?</button>
+        <a class="icon-btn account-btn" href="./account" id="btn-account" aria-label="Account">·</a>
+      </span>
     </header>
 
-    <section class="site-hero" id="top">
-      <div class="site-wrap">
-        <p class="site-eyebrow">Free · open source · nothing is uploaded</p>
-        <h1 class="site-title">Photograph a document. Get a real scan.</h1>
-        <p class="site-lede">
-          Point your phone at a page. OpenDocScan finds the edges of the sheet, straightens the
-          perspective, cleans the lighting, reads the text, and writes a multi-page PDF you can
-          search and select from. It is running below — not a screenshot of it.
-        </p>
-
-        <div class="site-stage">
-
+    <!-- app:begin -->
     <div id="app">
       <!-- Library ------------------------------------------------------ -->
+      <!-- No bar on this view. It carried a second "OpenDocScan." directly
+           under the site header's, which is the page's own wordmark repeated
+           340px lower, and a framed app is still a second bar. Its two
+           controls now live in the site header — the same elements, moved, so
+           every getElementById binding in app.js still finds them. -->
       <section class="view" id="view-library" data-view="library">
-        <header class="bar">
-          <h1 class="wordmark"><span class="prefix">Open</span>DocScan<span class="dot">.</span></h1>
-          <span class="bar-actions">
-            <button class="icon-btn" id="btn-about" aria-label="About this app">?</button>
-            <!-- The account, as a quiet way in rather than a call to action. It
-                 navigates to its own page: signing in redirects the whole
-                 window, and doing that from here would throw away whatever the
-                 scanner was holding. -->
-            <a class="icon-btn account-btn" href="./account" id="btn-account"
-               aria-label="Account" title="Account">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                   stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
-                   aria-hidden="true">
-                <circle cx="12" cy="8" r="3.6" />
-                <path d="M4.8 20a7.2 7.2 0 0 1 14.4 0" />
-              </svg>
-            </a>
-          </span>
-        </header>
 
         <div class="pad">
           <label class="search">
@@ -165,7 +83,7 @@
       <section class="view" id="view-capture" data-view="capture" hidden>
         <header class="bar">
           <button class="icon-btn" data-back="library" aria-label="Back">←</button>
-          <h1 id="capture-count">New document</h1>
+          <h2 id="capture-count">New document</h2>
           <button class="icon-btn" id="btn-flip" aria-label="Switch camera">⟳</button>
         </header>
 
@@ -186,7 +104,7 @@
       <section class="view" id="view-crop" data-view="crop" hidden>
         <header class="bar">
           <button class="icon-btn" id="btn-crop-cancel" aria-label="Discard this page">←</button>
-          <h1>Adjust corners</h1>
+          <h2>Adjust corners</h2>
           <button class="text-btn" id="btn-crop-reset">Whole image</button>
         </header>
 
@@ -204,7 +122,7 @@
       <section class="view" id="view-filter" data-view="filter" hidden>
         <header class="bar">
           <button class="icon-btn" id="btn-filter-back" aria-label="Back to corners">←</button>
-          <h1>Clean up</h1>
+          <h2>Clean up</h2>
           <button class="text-btn" id="btn-filter-rotate">Rotate</button>
         </header>
 
@@ -234,7 +152,7 @@
       <section class="view" id="view-tray" data-view="tray" hidden>
         <header class="bar">
           <button class="icon-btn" id="btn-tray-back" aria-label="Back to camera">←</button>
-          <h1 id="tray-title">Pages</h1>
+          <h2 id="tray-title">Pages</h2>
           <button class="text-btn" id="btn-tray-discard">Discard</button>
         </header>
 
@@ -287,7 +205,7 @@
       <section class="view" id="view-doc" data-view="doc" hidden>
         <header class="bar">
           <button class="icon-btn" data-back="library" aria-label="Back to library">←</button>
-          <h1 id="doc-name">Document</h1>
+          <h2 id="doc-name">Document</h2>
           <button class="icon-btn" id="btn-doc-delete" aria-label="Delete this document">🗑</button>
         </header>
 
@@ -325,209 +243,6 @@
       <dl id="about-facts"></dl>
       <form method="dialog"><button class="btn primary">Close</button></form>
     </dialog>
-        </div>
-        <p class="site-stage-note">
-          Nothing to sign up for, no watermark, no cap on pages, and nothing to install.
-        </p>
-      </div>
-    </section>
-
-    <main class="site-copy">
-      <div class="site-wrap">
-        <section id="how">
-          <h2>Every step happens on your own machine.</h2>
-          <p>
-            The scanning core is written in Rust and compiled to WebAssembly — 139 KB over the
-            wire, gzipped. It runs in a background worker inside the tab, which is why dragging
-            the brightness slider on a 12-megapixel photo does not stutter.
-          </p>
-          <div class="site-grid">
-            <div class="site-card">
-              <h3>Find the page</h3>
-              <p>
-                The sheet is outlined live in the viewfinder as you move. If the outline is
-                wrong, drag any of the four corners onto the right ones.
-              </p>
-            </div>
-            <div class="site-card">
-              <h3>Straighten it</h3>
-              <p>
-                The quadrilateral you photographed is mapped back to a rectangle, sized from the
-                page's near edge so none of the sharp detail is thrown away.
-              </p>
-            </div>
-            <div class="site-card">
-              <h3>Clean it up</h3>
-              <p>
-                Photo, Enhance, or Black &amp; white, with brightness and rotation. Enhance
-                stretches the page back to white paper and black ink without crushing either.
-              </p>
-            </div>
-            <div class="site-card">
-              <h3>Read it</h3>
-              <p>
-                On-device text recognition puts an invisible layer behind the page image, so the
-                PDF is searchable and selectable while still looking like the scan.
-              </p>
-            </div>
-            <div class="site-card">
-              <h3>Build the PDF</h3>
-              <p>
-                Add, reorder and delete pages with no limit. Choose A4, Letter, Legal or the
-                scan's own shape, and how hard to compress.
-              </p>
-            </div>
-            <div class="site-card">
-              <h3>Keep it, or don't</h3>
-              <p>
-                Finished documents stay in this browser and are searchable across every scan you
-                have made — by the words recognition read inside them.
-              </p>
-            </div>
-          </div>
-
-          <div class="site-stats">
-            <div class="site-stat"><b>139 KB</b><span>Core, over the wire</span></div>
-            <div class="site-stat"><b>80</b><span>Tests on the core</span></div>
-            <div class="site-stat"><b>0</b><span>Requests after load</span></div>
-            <div class="site-stat"><b>0</b><span>Long tasks, per scan</span></div>
-          </div>
-        </section>
-
-        <section id="apps">
-          <h2>Also being built for iPhone, iPad and Android.</h2>
-          <p>
-            The scanner above runs in any modern browser, including the one on your phone. That
-            is the whole product today. The same Rust core is also being built into native apps,
-            so the camera, the file picker and offline storage come from the platform rather
-            than from a browser tab — the identical scanning code, compiled for the phone.
-          </p>
-          <ul class="site-platforms">
-            <li>
-              <span class="site-state site-state-ready">Ready</span>
-              <b>In your browser</b>
-              Every feature, on any device. Add it to your home screen and it opens like an app
-              and works offline.
-            </li>
-            <li>
-              <span class="site-state">Release candidate</span>
-              <b>Android</b>
-              A native build you can sideload today. Early — it takes a photograph as far as the
-              scanning engine and no further.
-            </li>
-            <li>
-              <span class="site-state">In progress</span>
-              <b>iPhone &amp; iPad</b>
-              Same engine, running on both and laid out for the iPad. Not yet signed for
-              distribution, so there is nothing to download.
-            </li>
-          </ul>
-          <div class="site-cta-row">
-            <a class="site-cta" href="https://github.com/OpenDocScan/opendocscan#get-the-app"
-              >Get the app — install notes</a
-            >
-          </div>
-        </section>
-
-        <section id="privacy">
-          <h2>The only scanner where you can check the privacy claim yourself.</h2>
-          <p>
-            Every scanner app says your documents stay private. In a native app that is a promise
-            you have no way to audit. Here it is something you can watch happen: open the
-            developer tools, switch to the Network panel, and scan a page. After the app has
-            loaded, nothing else is requested.
-          </p>
-          <ul class="site-claims">
-            <li>
-              <strong>The core cannot reach the network</strong>
-              The Rust module that does the scanning has no HTTP client and no networking
-              dependency compiled into it. There is no code path to a server.
-            </li>
-            <li>
-              <strong>The text recognition is served from here</strong>
-              Recognition engines normally fetch their model from a public CDN, which would tell
-              a third party each time you scanned something. Every byte of it is served from
-              this site instead.
-            </li>
-            <li>
-              <strong>Cross-origin requests are refused, not merely avoided</strong>
-              A service worker sits in front of every request the page makes and answers
-              anything bound for another origin with a 403 — every method, not just reads.
-            </li>
-            <li>
-              <strong>Scanning needs no account</strong>
-              There is nothing to register for, and no feature is behind a sign-in. An optional
-              account exists — it carries credits across our apps — but your documents are
-              stored by your browser, on your device, and never reach it.
-            </li>
-            <li>
-              <strong>No ads, no trackers, no analytics</strong>
-              This page loads no third-party script and sets no cookie, and its test suite fails
-              if a request ever leaves the origin.
-            </li>
-          </ul>
-        </section>
-
-        <section id="faq">
-          <h2>Before you scan anything.</h2>
-          <dl class="site-faq">
-            <dt>Does it work offline?</dt>
-            <dd>
-              Yes. Once the page has loaded it keeps working with no connection, including the
-              text recognition — which is the part that usually needs a server.
-            </dd>
-
-            <dt>Is there an app for my phone?</dt>
-            <dd>
-              This page is one — add it to your home screen and it opens like any other, works
-              offline, and uses the rear camera. Native
-              <a href="#apps">iPhone, iPad and Android builds</a> are also in progress over the
-              same scanning code, but they are early. The browser version is the complete one.
-            </dd>
-
-            <dt>Do I need an account?</dt>
-            <dd>
-              No. Nothing here is behind a sign-in. There is an optional
-              <a href="/account">account</a> that carries credits across our apps; your scans are
-              never part of it.
-            </dd>
-
-            <dt>Which languages does the text recognition read?</dt>
-            <dd>
-              English today. The recognised text is written into the PDF as an invisible layer,
-              which currently carries Latin script only — a word it cannot encode is left out of
-              the searchable layer rather than mangled, and the page image is unaffected.
-            </dd>
-
-            <dt>Where are my documents stored?</dt>
-            <dd>
-              In this browser, on this device. Not on a server, which also means they do not
-              appear on your other devices, and clearing your browsing data clears them.
-            </dd>
-
-            <dt>Is it really open source?</dt>
-            <dd>
-              Yes — <a href="https://github.com/OpenDocScan/opendocscan">the whole thing</a>,
-              under MIT or Apache-2.0.
-            </dd>
-          </dl>
-        </section>
-      </div>
-    </main>
-
-    <footer class="site-footer">
-      <div class="site-wrap">
-        <nav>
-          <a href="/privacy.html">Privacy</a>
-          <a href="https://github.com/OpenDocScan/opendocscan">Source</a>
-        </nav>
-        <p>
-          OpenDocScan is free and open source, under MIT or Apache-2.0. It runs on your device;
-          what you scan is yours and stays there.
-        </p>
-      </div>
-    </footer>
-
-    <script type="module" src="src/app.js"></script>
+    <!-- app:end -->
   </body>
 </html>

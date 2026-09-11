@@ -7,11 +7,20 @@
 import { chromium } from 'playwright';
 import { strict as assert } from 'node:assert';
 import { writeFileSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from 'node:url';
 
 // Playwright specs in a `"type": "module"` package have no `__dirname`.
-const WEB_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
+// Where the shipped files are. By default this repo's own `apps/web` — the app
+// on its own, which is what a developer runs. `--composed <dir>` points it at
+// the composed site instead, which is what anybody is actually served: the
+// product page from the private site repo with this app inside it. The
+// third-party-host scan and the stylesheet-overlap check both read files by
+// path, so without this they would pass by scanning a page nobody sees.
+const composedFlag = process.argv.indexOf("--composed");
+const WEB_DIR = composedFlag >= 0 && process.argv[composedFlag + 1]
+  ? resolve(process.argv[composedFlag + 1])
+  : dirname(dirname(fileURLToPath(import.meta.url)));
 
 const BASE = process.env.BASE_URL ?? 'http://127.0.0.1:8765';
 const OUT = process.env.OUT_DIR ?? '/tmp';

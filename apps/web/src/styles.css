@@ -103,7 +103,13 @@ body {
   flex: 0 0 auto;
 }
 
-.bar h1 {
+/* `h2` as well as `h1`: these are the app's own screen titles, sharing a
+   document with the marketing page's `h1`. Seven `h1`s left the page with no
+   outline at all for a screen reader or a crawler. The type is unchanged;
+   only the level is. */
+.bar h1,
+.bar h2,
+.bar .wordmark {
   flex: 1;
   margin: 0;
   font-size: 16px;
