@@ -2,6 +2,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import 'account/account_controller.dart';
+import 'account/account_screen.dart';
 import 'capture/capture_controller.dart';
 import 'capture/capture_screen.dart';
 import 'import/file_picker_platform.dart';
@@ -24,12 +26,18 @@ class HomeScreen extends StatefulWidget {
     required this.picker,
     required this.permissions,
     required this.captureControllerFactory,
+    required this.account,
     this.decode = decodeThroughCore,
   });
 
   final FilePickerPlatform picker;
   final PermissionGate permissions;
   final CaptureController Function() captureControllerFactory;
+
+  /// The account, which this screen only ever shows a way in to. Required
+  /// rather than optional so that the one control leading to it cannot be
+  /// dropped by a refactor without the compiler saying so.
+  final AccountController account;
 
   /// How a photograph becomes a result. Defaults to the real bridge; injected
   /// in host tests, where the Rust library is not loaded — `flutter test` runs
@@ -84,7 +92,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = DocScanTheme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Wordmark()),
+      appBar: AppBar(
+        title: const Wordmark(),
+        // Top right, on every route that has this bar. Not a card among the
+        // results and not a line in a footer: the account is not a feature of
+        // the scanner — it unlocks nothing here — so it gets a way in rather
+        // than a place in the reading order.
+        actions: [_AccountButton(controller: widget.account)],
+      ),
       body: Column(
         children: [
           if (_busy) const LinearProgressIndicator(key: Key('busy')),
@@ -145,6 +160,43 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The way in. Icon-only and quiet, because it is a door rather than a call to
+/// action.
+class _AccountButton extends StatelessWidget {
+  const _AccountButton({required this.controller});
+
+  final AccountController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = DocScanTheme.of(context);
+
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        // Read from the session this process already holds, never from the
+        // server. It decides a tooltip; it is not worth a network round trip
+        // on every launch, most of them signed out.
+        final signedIn = controller.stage == AccountStage.signedIn;
+
+        return IconButton(
+          key: const Key('account'),
+          tooltip: 'Account',
+          icon: Icon(
+            signedIn ? Icons.account_circle : Icons.account_circle_outlined,
+            color: signedIn ? theme.textStrong : theme.textMuted,
+          ),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => AccountScreen(controller: controller),
+            ),
+          ),
+        );
+      },
     );
   }
 }

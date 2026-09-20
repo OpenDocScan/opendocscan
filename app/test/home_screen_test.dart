@@ -22,6 +22,7 @@ void main() {
         picker: picker,
         permissions: permissions ?? FakePermissions(),
         captureControllerFactory: () => camera ?? FakeCamera(),
+        account: offlineAccount(),
         decode: decode ??
             (bytes) async =>
                 ScanDecoded(bytes: bytes, width: 1275, height: 1650),
@@ -182,5 +183,35 @@ void main() {
 
     gate.complete(ScanDecoded(bytes: onePixelPng, width: 1, height: 1));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('the way into the account is top right, and it is a way out',
+      (tester) async {
+    // The web suite asserts this with getBoundingClientRect for the same
+    // reason it is measured here rather than merely found: an account link
+    // that exists but has slid into a footer, or under a menu, is the state
+    // OpenPixels shipped and had to undo. It has to be where a person looks.
+    await tester.pumpWidget(wrap(picker: FakePicker([])));
+
+    final button = find.byKey(const Key('account'));
+    expect(button, findsOneWidget);
+
+    final box = tester.getRect(button);
+    final window = tester.view.physicalSize.width / tester.view.devicePixelRatio;
+    expect(box.center.dx, greaterThan(window / 2), reason: 'not on the right half');
+    expect(box.top, lessThan(120), reason: 'not near the top');
+
+    expect(
+      tester.widget<IconButton>(button).tooltip,
+      'Account',
+      reason: 'it is icon-only, so the label is the only name it has',
+    );
+
+    // And it leaves the scanner rather than opening over it: signing in
+    // navigates the whole app out to a browser and comes back through a cold
+    // start, so anything the scanner was holding would be gone.
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.text('Sign in to OpenDocScan'), findsOneWidget);
   });
 }

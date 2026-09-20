@@ -243,6 +243,97 @@ test('the scanner still cannot reach the account host', async (page) => {
   }
 });
 
+// ------------------------------------------------- the phone app's return trip
+
+// Collects every attempt to spend a one-time code while `body` runs.
+const exchangesDuring = async (page, body) => {
+  const seen = [];
+  const listen = (request) => {
+    if (request.method() === 'POST' && request.url().includes('/v1/auth/oidc/exchange')) {
+      seen.push(request.url());
+    }
+  };
+  page.on('request', listen);
+  try {
+    await body();
+  } finally {
+    page.off('request', listen);
+  }
+  return seen;
+};
+
+test('an ordinary sign-in return does reach the exchange', async (page) => {
+  // The control for the test below, and worth having on its own: this is the
+  // half of sign-in that fails with nothing in the console. The code being
+  // rejected is fine and expected — it is junk. The assertion is that the
+  // request was *attempted*, because the bug is that it never is.
+  const exchanges = await exchangesDuring(page, () =>
+    page.goto(`${BASE}/account#code=not-a-real-code`, { waitUntil: 'networkidle' }));
+
+  if (exchanges.length !== 1) {
+    throw new Error(`expected one exchange attempt, saw ${exchanges.length}`);
+  }
+});
+
+test('a native return is handed to the app rather than spent in the browser',
+  async (page) => {
+    // The phone app has no page for an OAuth redirect to land on, so it sends
+    // the round trip here and this page forwards the code to it. The code is
+    // one-time: if this page spent it first, the app would be handed one that
+    // no longer works — and that failure would look exactly like a broken app.
+    const exchanges = await exchangesDuring(page, () =>
+      page.goto(`${BASE}/account?native=1#code=not-a-real-code`,
+                { waitUntil: 'networkidle' }));
+
+    if (exchanges.length !== 0) {
+      throw new Error('this page spent the code the app was waiting for');
+    }
+
+    const state = await page.evaluate(() => {
+      const notice = document.getElementById('native-handoff');
+      return {
+        handoff: window.__docscanHandoff ?? null,
+        hash: location.hash,
+        // Existence and visibility, separately. `!notice?.hidden` was the first
+        // version of this line and it is a false green: an absent element makes
+        // it `!undefined`, so it passed on a page that had aborted parsing and
+        // had no body at all.
+        exists: notice !== null,
+        notice: notice !== null && !notice.hidden,
+      };
+    });
+
+    if (!state.exists) throw new Error('the page has no fallback element at all');
+
+    if (state.handoff !== '#code=not-a-real-code') {
+      throw new Error(`the handoff did not run; it saw ${state.handoff}`);
+    }
+    // Taken out of the document before the deferred module could see it. This
+    // is the mechanism, not a tidy-up: leaving it there is what would let
+    // <openapps-login> race the app for the code.
+    if (state.hash !== '') throw new Error(`the code is still in the URL: ${state.hash}`);
+    // Chromium answers the custom scheme with nothing, which is exactly the
+    // "no app installed" case, so the way out has to be on screen.
+    if (!state.notice) throw new Error('no fallback offered when no app answered');
+  });
+
+test('the fallback finishes the sign-in here, with the code still unspent',
+  async (page) => {
+    const exchanges = await exchangesDuring(page, async () => {
+      await page.goto(`${BASE}/account?native=1#code=not-a-real-code`,
+                      { waitUntil: 'networkidle' });
+      await page.click('#continue-here');
+      await page.waitForLoadState('networkidle');
+    });
+
+    if (exchanges.length !== 1) {
+      throw new Error(`"continue here" did not spend the code (${exchanges.length} attempts)`);
+    }
+    // And it must not bounce back into the handoff a second time.
+    const url = new URL(page.url());
+    if (url.searchParams.get('native')) throw new Error('native=1 survived the fallback');
+  });
+
 // ------------------------------------------------------------------- runner
 
 const width = 1280;

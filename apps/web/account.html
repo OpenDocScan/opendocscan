@@ -9,6 +9,44 @@
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="icons/icon-180.png" />
 
+    <!--
+      The phone app's half of sign-in, and it has to run before anything else.
+
+      A native app has no page for an OAuth redirect to land on, so OpenDocScan
+      for Android and iOS sends the round trip here instead and this page
+      forwards the one-time code to `opendocscan://auth`. The alternative is
+      pointing `return_to` straight at that custom scheme, which the account
+      server would accept — but only after an entry is added to an
+      `allowed_origins` list shared by every product in the suite, and applying
+      it recreates a container that signs everyone out for a few seconds. This
+      origin is already on that list.
+
+      Split in two, and the split is the whole of it. This half runs blocking in
+      the head and only takes the code *out of the document*; the half at the
+      end of the body wakes the app. They were one script to begin with and it
+      was wrong in both directions:
+
+      * The code has to be gone before the deferred module runs, because
+        <openapps-login> spends it from its own connectedCallback and it is
+        one-time. Lose that race and the app is handed a code that no longer
+        works — a failure that looks exactly like a broken app.
+      * But navigating to the custom scheme from the head **aborts parsing**.
+        Measured in Chromium: `document.body` comes back null, so the fallback
+        below never exists and a phone without the app installed gets a blank
+        page. Whatever wakes the app has to run after the document is built.
+    -->
+    <script>
+      (function () {
+        "use strict";
+        if (new URLSearchParams(location.search).get("native") !== "1") return;
+        var hash = location.hash;
+        if (!new URLSearchParams(hash.replace(/^#/, "")).get("code")) return;
+
+        history.replaceState(null, "", location.pathname + location.search);
+        window.__docscanHandoff = hash;
+      })();
+    </script>
+
     <link rel="stylesheet" href="tokens/css/colors.css" />
     <link rel="stylesheet" href="tokens/css/typography.css" />
     <link rel="stylesheet" href="tokens/css/spacing.css" />
@@ -33,6 +71,17 @@
         display: flex;
         flex-direction: column;
         gap: var(--space-6);
+      }
+
+      .linklike {
+        background: none;
+        border: 0;
+        padding: 0;
+        font: inherit;
+        color: var(--text-link);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        cursor: pointer;
       }
 
       .account-page h1 {
@@ -81,6 +130,14 @@
         <div class="pad account-page">
           <h1>Account</h1>
 
+          <div class="account-note" id="native-handoff" hidden>
+            <p><strong>Finishing in the OpenDocScan app.</strong> You can close this tab.</p>
+            <p>
+              Nothing happened?
+              <button type="button" id="continue-here" class="linklike">Continue here instead</button>
+            </p>
+          </div>
+
           <p class="account-note">
             An account is <strong>optional</strong>. Every part of OpenDocScan — scanning,
             straightening, text recognition, exporting a PDF — runs on this device and works
@@ -128,6 +185,37 @@
         </div>
       </section>
     </div>
+
+    <script>
+      // The other half of the handoff. A classic script here rather than in the
+      // head, and rather than inside the module below: classic scripts run as
+      // the parser reaches them and modules are deferred, so this is after the
+      // document exists and still before <openapps-login> is upgraded.
+      (function () {
+        "use strict";
+        var hash = window.__docscanHandoff;
+        if (!hash) return;
+
+        // The way out goes up *first*. If the app is installed the browser is
+        // about to lose the foreground and none of this is ever seen; if it is
+        // not, this is the whole of what the visitor gets, and it has to be
+        // already on the page rather than scheduled after a navigation that may
+        // never return.
+        var notice = document.getElementById("native-handoff");
+        if (notice) notice.hidden = false;
+
+        var again = document.getElementById("continue-here");
+        if (again) {
+          again.addEventListener("click", function () {
+            // Drops ?native=1 so this cannot bounce a second time, and puts the
+            // still-unspent code back where <openapps-login> looks for it.
+            location.replace(location.pathname + hash);
+          });
+        }
+
+        location.replace("opendocscan://auth" + hash);
+      })();
+    </script>
 
     <script type="module">
       import { configure, getClient, onChange } from './vendor/openapps/openapps-ui.js';

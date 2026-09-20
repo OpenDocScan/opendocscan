@@ -22,6 +22,7 @@ void main() {
           picker: picker,
           permissions: FakePermissions(),
           captureControllerFactory: FakeCamera.new,
+          account: offlineAccount(),
           decode: decode ??
               (bytes) async =>
                   ScanDecoded(bytes: bytes, width: 1275, height: 1650),

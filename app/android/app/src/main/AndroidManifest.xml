@@ -5,10 +5,20 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
-    <!-- No INTERNET permission, on purpose. Nothing here has anything to send,
-         and its absence is the strongest form the privacy claim can take on
-         Android: the process cannot open a socket even if some future
-         dependency tried to. -->
+    <!-- The account needs a socket, so this build has one. It was deliberately
+         absent until accounts existed, and dropping that guarantee without
+         replacing it would have been the wrong trade: what replaces it is
+         `isAccountHost` in lib/account/openapps.dart, which every request in
+         the app passes through and which refuses any host but the account
+         server. That is enforcement in software rather than by the OS — weaker,
+         and honestly weaker, which is why README.md now says so in the same
+         words instead of repeating the old claim.
+
+         Nothing on the scanning path opens a connection: detection,
+         rectification, filtering, recognition and PDF assembly are Rust running
+         on this device, and `flutter test integration_test/` asserts a complete
+         scan makes no request at all. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:label="OpenDocScan"
@@ -35,6 +45,25 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+
+            <!-- Where a finished sign-in comes back to. A native app has no page
+                 for an OAuth redirect to land on, so the round trip ends at the
+                 operating system: the browser is sent to
+                 `opendocscan://auth#code=...` and Android hands this activity
+                 the whole URI, fragment included.
+
+                 `singleTop` above is load-bearing. Without it the callback
+                 starts a second copy of the app rather than delivering to the
+                 running one, and the scanner's state is lost on every sign-in.
+
+                 Not `autoVerify`: verifying is for https App Links, and this is
+                 a custom scheme. See README.md for what that costs. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="opendocscan" android:host="auth"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
@@ -51,6 +80,14 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Android 11 and later hide every other installed package unless it is
+             declared here. Without this the app cannot see that a browser
+             exists, `launchUrl` returns false, and sign-in fails with "Could
+             not open a browser" on a phone that plainly has one. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
         </intent>
     </queries>
 </manifest>

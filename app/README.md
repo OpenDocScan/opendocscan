@@ -11,6 +11,7 @@ app/                     this Flutter project
   lib/
     main.dart            loads the Rust library, then runs the app
     home_screen.dart     capture or import, and the results
+    account/             sign-in, credits and the ledger — see below
     capture/             the viewfinder, behind a fake-able controller
     import/              the file picker, behind an interface
     permissions/         permission checks, behind an interface
@@ -36,14 +37,14 @@ There are two suites and they prove different things. Running only one of them
 gives false confidence, in both directions.
 
 ```sh
-flutter test                                              # 20, no device
+flutter test                                              # 59, no device
 flutter test integration_test/bridge_test.dart -d <id>    # 6, on a device
 ```
 
 `test/` fakes the bridge, because `flutter test` runs on the Dart VM where a
 library built for a phone cannot be loaded. So it proves the **screens** are
 right — every permission state, a cancelled pick, one bad file among good
-ones — and proves nothing at all about the bridge.
+ones, the account flow end to end — and proves nothing at all about the bridge.
 
 `integration_test/` is the other half: it loads the real `.so`/`.framework`,
 calls the real core, and is the only thing that catches a broken
@@ -51,6 +52,57 @@ cross-compile, a missing ABI, or codegen that drifted from the Rust.
 
 Verified on an Android emulator (API 35, arm64) and the iOS Simulator, plus a
 manual pass importing a real page through the system photo picker.
+
+## The account
+
+Optional, and nothing in the product is behind it: every operation OpenDocScan
+performs runs on this phone, so there is nothing to meter and no feature to
+withhold. It exists so that credits bought in one of our apps are the same
+credits in the others.
+
+Sign-in is a round trip through the **system browser** and back through the
+**operating system**, because a native app has no page for an OAuth redirect to
+land on:
+
+```
+app  ──▶ browser: auth.opendocscan.com/v1/auth/oidc/google/start
+                    ?return_to=https://opendocscan.com/account?native=1
+     ──▶ Google ──▶ the callback ──▶ opendocscan.com/account?native=1#code=…
+                                       (an inline script forwards it)
+     ◀── opendocscan://auth#code=…  ──▶  POST /v1/auth/oidc/exchange
+```
+
+Four things about that are load-bearing, and each one was a real decision:
+
+1. **The system browser, never a WebView.** Google refuses OAuth from an
+   embedded user agent — `disallowed_useragent` — so an in-app window cannot be
+   made to work at all. It is also what RFC 8252 asks for, and it means a
+   password is never typed into a window this app could read.
+2. **The round trip returns to the web account page, not straight to
+   `opendocscan://auth`.** The server would accept the custom scheme — measured,
+   it answers `400 … not in allowed_origins` rather than "not a valid absolute
+   URL" — but only after an entry is added to a list shared by every product in
+   the suite, and applying it recreates a container that signs everyone out for
+   a few seconds. The apex is already on that list. The trampoline lives in
+   `apps/web/account.html`, runs before anything can spend the one-time code,
+   and falls back to finishing the sign-in in the browser when no app answers.
+3. **`android:launchMode="singleTop"`.** Without it the callback starts a second
+   copy of the app instead of delivering to the running one, and whatever the
+   scanner was holding is gone on every sign-in.
+4. **The `<queries>` entry for `https`.** Android 11 hides every other installed
+   package unless it is declared, so without it `launchUrl` returns false and
+   sign-in fails with "Could not open a browser" on a phone that plainly has one.
+
+`AccountController.start()` runs from `main.dart` at launch rather than from the
+account screen, because the callback frequently arrives as a **cold start** —
+Android is free to have killed the app while the browser had the foreground — and
+a listener attached on first visit to the account screen would never see it.
+
+### What this cost
+
+The release manifest used to ship without `android.permission.INTERNET`. It
+does not any more; `isAccountHost` in `lib/account/openapps.dart` is what
+replaces that guarantee, and the top-level README says so in those words.
 
 ## Regenerating the bridge
 

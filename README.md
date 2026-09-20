@@ -84,6 +84,7 @@ source](#the-phone-app). Needs iOS or iPadOS 15 or newer.
 | Library | Stored in this browser, full-text searchable across every scan |
 | Export | PDF to the share sheet, or a download |
 | Offline | Works with no connection once loaded |
+| Account | Optional, and nothing is behind it — it carries credits between our apps |
 
 <table>
 <tr>
@@ -125,8 +126,21 @@ Three mechanisms make that true, in order of how hard each is to subvert:
 
 The end-to-end suite asserts the same thing on every run: it records every
 request the app makes while driving a complete scan and fails if one leaves the
-origin. The Android build ships **without the internet permission at all**, so
-that process cannot open a socket even if some future dependency tried to.
+origin.
+
+**The phone builds used to carry a stronger version of this claim, and no
+longer do.** Until accounts existed the Android manifest shipped without the
+`INTERNET` permission, so the process could not open a socket at all — a
+guarantee enforced by the operating system rather than by us. An optional
+account needs one, so that permission is now present and the guarantee is
+enforced in software instead: every request the app makes passes through
+`AccountApi`, which refuses any host but the account server, and
+`app/test/account_api_test.dart` proves a request anywhere else throws rather
+than leaving the device. That is weaker than the old arrangement and is written
+here plainly rather than quietly dropped. The scanning path itself opens no
+connection at all — detection, rectification, filtering, recognition and PDF
+assembly are Rust running on the device — and nothing about a document is ever
+sent anywhere, signed in or not.
 
 ---
 
@@ -197,7 +211,7 @@ cost real time when this was first stood up.
 ```sh
 cargo test --workspace                                    # 80, no browser
 cd apps/web && npm test                                   # 4, real Chromium
-cd app && flutter test                                    # 28, no device
+cd app && flutter test                                    # 59, no device
 cd app && flutter test integration_test/ -d <device-id>   # 6, on a device
 ```
 
@@ -211,9 +225,10 @@ in a specific direction.
   aspect rather than the *photo's*, exports a PDF, and parses it back for its
   page count, title, invisible-text marker and the words recognition read.
 - **The Flutter host suite** covers the phone screens — every permission state,
-  a cancelled pick, one bad file among good ones, and the iPad layouts driven by
-  resizing the window. It proves nothing about the bridge: a library built for a
-  phone cannot load on the Dart VM.
+  a cancelled pick, one bad file among good ones, the iPad layouts driven by
+  resizing the window, and the whole account flow including the sign-in return
+  trip, which is the half that fails without an error message. It proves nothing
+  about the bridge: a library built for a phone cannot load on the Dart VM.
 - **The integration suite** loads the real library and calls the real core. It is
   the only thing that catches a broken cross-compile, a missing ABI, or generated
   bindings that drifted from the Rust.
@@ -242,6 +257,15 @@ measurement rejected.
 - **The phone apps have never taken a photograph on real hardware.** An
   emulator's camera is not worth much and the iOS Simulator has none. That is
   what the release candidate is for.
+- **The phone apps' sign-in uses a custom URL scheme**, `opendocscan://auth`,
+  because a verified https deep link needs a signing identity the project does
+  not have yet — an Apple Team ID on iOS, and a release keystore on Android
+  rather than the debug key these builds carry. Until then another app on the
+  same device could register that scheme and intercept the one-time code from a
+  sign-in in progress. It cannot reach anything already stored, and it cannot
+  affect a device that has no such app on it, but it is a real weakness of a
+  custom scheme and the reason the fix is an App Link and a Universal Link
+  rather than more code.
 
 ## Licence
 

@@ -60,6 +60,28 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<!-- Where a finished sign-in comes back to. iOS matches the scheme of an
+	     incoming URL against this list and hands the app the whole URL, fragment
+	     and all; the one-time code rides in the fragment.
+
+	     A custom scheme rather than a Universal Link, and that is a limitation
+	     rather than a choice: a Universal Link has to be proved with an
+	     apple-app-site-association file naming a Team ID, and this app has no
+	     Apple signing certificate yet. Until it does, any app on the device could
+	     register this scheme and intercept the callback. README.md says so. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.opendocscan.docscan.auth</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>opendocscan</string>
+			</array>
+		</dict>
+	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
