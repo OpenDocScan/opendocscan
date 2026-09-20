@@ -21,3 +21,4 @@ app/android/.gradle/
 app/android/local.properties
 app/rust_builder/cargokit/build_tool/.dart_tool/
 *.iml
+.DS_Store
