@@ -295,14 +295,15 @@ function scanBundleForEndpoints() {
   // third-party-looking names allowed. The platform's own domain is not on this
   // list on purpose: a client that names it has skipped the masking, and that
   // is the regression this assertion exists to catch.
-  // Our own domain and the two account hosts, plus github.com — which appears
-  // only as the source link's href and as nothing the page ever fetches. The
+  // Our own domain and the two account hosts, plus github.com and x.com —
+  // which appear only as the source and social links' hrefs and as nothing
+  // the page ever fetches. The
   // proof of that is the runtime check above, which records every request the
   // app actually makes and fails if one leaves the origin; this static scan is
   // the second net, and it is here to catch a *new* host being added, not to
   // relitigate an anchor.
   const allowed =
-    /^(localhost|127\.0\.0\.1|(www\.)?w3\.org|schema\.org|(www\.)?example\.(com|org)|([a-z]+\.)?opendocscan\.com|github\.com)$/;
+    /^(localhost|127\.0\.0\.1|(www\.)?w3\.org|schema\.org|(www\.)?example\.(com|org)|([a-z]+\.)?opendocscan\.com|github\.com|x\.com)$/;
   const found = [];
 
   const walk = (relative) => {
