@@ -269,4 +269,5 @@ measurement rejected.
 
 ## Licence
 
-MIT or Apache-2.0, at your option.
+Dual-licensed under either [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE),
+at your option.
